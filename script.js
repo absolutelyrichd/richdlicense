@@ -348,7 +348,7 @@ function createLicenseRowHTML(license = {}) {
             </div>
             <div class="mb-2">
                 <label class="block text-gray-400 text-sm font-bold mb-1">Biaya (IDR)</label>
-                <input type="number" class="license-cost w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" value="${license.cost || '0'}" min="0">
+                <input type="number" id="license-cost-input" class="license-cost w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" value="${license.cost || '0'}" min="0">
             </div>
         </div>
     `;
@@ -378,17 +378,28 @@ function openModal(license = null) {
         addRowButton.classList.remove('hidden');
     }
     
-    // Add event listener to dynamically disable expiration date and status inputs
+    // Add event listener to dynamically disable expiration date, status, and cost inputs
     const typeSelect = licenseRowsContainer.querySelector('.license-type');
     const statusSelect = licenseRowsContainer.querySelector('.license-status');
     const expirationInput = licenseRowsContainer.querySelector('.license-expiration-date');
-    if (typeSelect && statusSelect && expirationInput) {
+    const costInput = licenseRowsContainer.querySelector('.license-cost');
+    
+    if (typeSelect && statusSelect && expirationInput && costInput) {
         const checkFields = () => {
             const isUnused = statusSelect.value === 'Belum dipakai';
             const isLifetime = typeSelect.value === 'Lifetime';
+            const isGiveaway = typeSelect.value === 'Giveaway';
 
+            // Logika untuk Biaya (IDR)
+            if (isGiveaway) {
+                costInput.disabled = true;
+                costInput.value = '0'; // Set nilai ke 0
+            } else {
+                costInput.disabled = false;
+            }
+
+            // Logika untuk Expired Date
             if (isLifetime) {
-                // Removed the logic that disables the status select
                 expirationInput.disabled = true;
                 expirationInput.value = ''; // Clear value
             } else {
@@ -404,6 +415,8 @@ function openModal(license = null) {
 
         typeSelect.addEventListener('change', checkFields);
         statusSelect.addEventListener('change', checkFields);
+        // Initial check when the modal is opened
+        checkFields();
     }
 
     licenseModal.classList.remove('hidden');
@@ -448,11 +461,13 @@ licenseForm.addEventListener('submit', async (e) => {
                 expirationDate: row.querySelector('.license-expiration-date').value ? new Date(row.querySelector('.license-expiration-date').value) : null,
                 lastUpdated: new Date()
             };
-            if (licenseData.type === 'Lifetime') {
-                // Removed the forced "Active" status
+            if (licenseData.type === 'Lifetime' || licenseData.type === 'Giveaway') {
                 licenseData.expirationDate = null;
             } else if (licenseData.status === 'Belum dipakai') {
                  licenseData.expirationDate = null;
+            }
+            if (licenseData.type === 'Giveaway') {
+                licenseData.cost = 0;
             }
             if (!licenseData.software) {
                 showToast("Nama software tidak boleh kosong.", true);
@@ -480,11 +495,13 @@ licenseForm.addEventListener('submit', async (e) => {
                     expirationDate: row.querySelector('.license-expiration-date').value ? new Date(row.querySelector('.license-expiration-date').value) : null,
                     lastUpdated: new Date()
                 };
-                if (licenseData.type === 'Lifetime') {
-                    // Removed the forced "Active" status
+                if (licenseData.type === 'Lifetime' || licenseData.type === 'Giveaway') {
                     licenseData.expirationDate = null;
                 } else if (licenseData.status === 'Belum dipakai') {
                      licenseData.expirationDate = null;
+                }
+                if (licenseData.type === 'Giveaway') {
+                    licenseData.cost = 0;
                 }
                 if (licenseData.software) {
                     const newLicenseRef = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses'));
