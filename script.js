@@ -1020,6 +1020,3 @@ jsonFileInput.addEventListener('change', (e) => {
     };
     reader.readAsText(file);
 });
-
-// Call handleSignIn() on page load to handle custom token auth
-// handleSignIn(); // Removed this line to prevent automatic pop-up
