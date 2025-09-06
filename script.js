@@ -190,7 +190,7 @@ function getLicenseBadgeClasses(type) {
         'Subscription': 'bg-yellow-500/20 text-yellow-300',
         'Trial': 'bg-gray-500/20 text-gray-300',
         'Giveaway': 'bg-fuchsia-500/20 text-fuchsia-300',
-        'Lifetime': 'bg-purple-500/20 text-purple-300',
+        'Lifetime': 'bg-orange-500/20 text-orange-300',
         'default': 'bg-slate-500/20 text-slate-300'
     };
     return colors[type] || colors['default'];
@@ -391,7 +391,7 @@ function openModal(license = null) {
             const isLifetime = typeSelect.value === 'Lifetime';
 
             if (isLifetime) {
-                // Remove the logic that disables the status select
+                // Removed the logic that disables the status select
                 expirationInput.disabled = true;
                 expirationInput.value = ''; // Clear value
             } else {
