@@ -255,7 +255,7 @@ function renderLicensesAsTable(licensesToRender) {
             <td class="p-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getLicenseBadgeClasses(license.type)}">${license.type || ''}</span></td>
             <td class="p-4 text-gray-400">${license.key || ''}</td>
             <td class="p-4 text-yellow-300">${license.cost ? formatCost(license.cost) : 'Gratis'}</td>
-            <td class="p-4 text-gray-400">${license.type === 'Lifetime' ? 'N/A' : formatDate(license.expirationDate)}</td>
+            <td class="p-4 text-gray-400">${license.type === 'Lifetime' ? 'Lifetime' : formatDate(license.expirationDate)}</td>
             <td class="p-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClasses(license.status)}">${license.status || ''}</span></td>
             <td class="p-4 whitespace-nowrap">
                 <button class="edit-btn p-1 text-gray-400 hover:text-white" data-id="${license.id}"><i class="ph ph-note-pencil"></i></button>
@@ -299,7 +299,7 @@ function renderLicensesAsCards(licensesToRender) {
             </div>
             <div class="flex justify-between text-sm text-gray-400">
                 <span>Kedaluwarsa:</span>
-                <span class="font-semibold text-white">${license.type === 'Lifetime' ? 'N/A' : formatDate(license.expirationDate)}</span>
+                <span class="font-semibold text-white">${license.type === 'Lifetime' ? 'Lifetime' : formatDate(license.expirationDate)}</span>
             </div>
         `;
         licenseListCards.appendChild(card);
@@ -333,7 +333,7 @@ function createLicenseRowHTML(license = {}) {
                 </div>
                 <div>
                     <label class="block text-gray-400 text-sm font-bold mb-1">Status Lisensi</label>
-                    <select class="license-status w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" ${isLifetime ? 'disabled' : ''}>
+                    <select class="license-status w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" ${isLifetime ? '' : ''}>
                         <option ${license.status === 'Active' ? 'selected' : ''}>Active</option>
                         <option ${license.status === 'Expired' ? 'selected' : ''}>Expired</option>
                         <option ${license.status === 'Revoked' ? 'selected' : ''}>Revoked</option>
@@ -391,8 +391,7 @@ function openModal(license = null) {
             const isLifetime = typeSelect.value === 'Lifetime';
 
             if (isLifetime) {
-                statusSelect.disabled = true;
-                statusSelect.value = 'Active'; // Set to a default value
+                // Remove the logic that disables the status select
                 expirationInput.disabled = true;
                 expirationInput.value = ''; // Clear value
             } else {
@@ -453,7 +452,7 @@ licenseForm.addEventListener('submit', async (e) => {
                 lastUpdated: new Date()
             };
             if (licenseData.type === 'Lifetime') {
-                licenseData.status = 'Active';
+                // Removed the forced "Active" status
                 licenseData.expirationDate = null;
             } else if (licenseData.status === 'Belum dipakai') {
                  licenseData.expirationDate = null;
@@ -485,7 +484,7 @@ licenseForm.addEventListener('submit', async (e) => {
                     lastUpdated: new Date()
                 };
                 if (licenseData.type === 'Lifetime') {
-                    licenseData.status = 'Active';
+                    // Removed the forced "Active" status
                     licenseData.expirationDate = null;
                 } else if (licenseData.status === 'Belum dipakai') {
                      licenseData.expirationDate = null;
