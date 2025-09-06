@@ -663,14 +663,14 @@ function updateCharts() {
     const typeData = licenses.reduce((acc, license) => { acc[license.type] = (acc[license.type] || 0) + 1; return acc; }, {});
     typeChart.data = {
         labels: Object.keys(typeData),
-        datasets: [{ data: Object.values(typeData), backgroundColor: ['#2dd4bf', '#fde047', '#94a3b8', '#a855f7', '#a855f7'] }]
+        datasets: [{ data: Object.values(typeData), backgroundColor: ['#2dd4bf', '#fde047', '#94a3b8', '#a855f7', '#0ea5e9'] }] // Updated color combination
     };
     typeChart.update();
 
     const statusData = licenses.reduce((acc, license) => { acc[license.status] = (acc[license.status] || 0) + 1; return acc; }, {});
     statusChart.data = {
         labels: Object.keys(statusData),
-        datasets: [{ data: Object.values(statusData), backgroundColor: ['#22c55e', '#ef4444', '#f97316', '#3b82f6'] }]
+        datasets: [{ data: Object.values(statusData), backgroundColor: ['#22c55e', '#ef4444', '#f97316', '#3b82f6'] }] // Updated color combination
     };
     statusChart.update();
     
@@ -682,7 +682,7 @@ function updateCharts() {
         datasets: [{ 
             label: 'Total Biaya', 
             data: costValues, 
-            backgroundColor: ['#2dd4bf', '#fde047', '#94a3b8', '#a855f7', '#a855f7'],
+            backgroundColor: ['#2dd4bf', '#fde047', '#94a3b8', '#a855f7', '#0ea5e9'], // Updated color combination
             borderRadius: 6, borderWidth: 2, borderColor: 'transparent'
         }]
     };
