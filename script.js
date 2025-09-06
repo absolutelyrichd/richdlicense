@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- Firebase Config and Auth ---
@@ -20,6 +20,7 @@ const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const provider = new GoogleAuthProvider(); // Initialize Google Auth Provider
 
 let currentUser = null;
 let licenses = [];
@@ -134,15 +135,11 @@ function showToast(message, isError = false) {
 
 // --- AUTHENTICATION ---
 async function handleSignIn() {
-    if (initialAuthToken) {
-        try {
-            await signInWithCustomToken(auth, initialAuthToken);
-        } catch (error) {
-            console.error("Custom token sign in failed, falling back to anonymous: ", error);
-            await signInAnonymously(auth);
-        }
-    } else {
-        await signInAnonymously(auth);
+    try {
+        await signInWithPopup(auth, provider);
+    } catch (error) {
+        console.error("Error signing in with Google: ", error);
+        showToast(`Gagal masuk: ${error.message}`, true);
     }
 }
 
