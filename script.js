@@ -657,20 +657,19 @@ function updateCharts() {
         const mostExpensive = licenses.reduce((max, current) => (current.cost > (max.cost || 0) ? current : max), licenses[0]);
         mostExpensiveLicense = `${mostExpensive.software} (${formatCost(mostExpensive.cost || 0)})`;
     }
-    totalCostElement.textContent = formatCost(totalCost);
-    mostExpensiveLicenseElement.textContent = mostExpensiveLicense;
+    totalCostElement.textContent = mostExpensiveLicense;
 
     const typeData = licenses.reduce((acc, license) => { acc[license.type] = (acc[license.type] || 0) + 1; return acc; }, {});
     typeChart.data = {
         labels: Object.keys(typeData),
-        datasets: [{ data: Object.values(typeData), backgroundColor: ['#2dd4bf', '#fde047', '#94a3b8', '#a855f7', '#0ea5e9'] }] // Updated color combination
+        datasets: [{ data: Object.values(typeData), backgroundColor: ['#0ea5e9', '#d946ef', '#64748b', '#14b8a6', '#f59e0b'] }] // Updated color combination
     };
     typeChart.update();
 
     const statusData = licenses.reduce((acc, license) => { acc[license.status] = (acc[license.status] || 0) + 1; return acc; }, {});
     statusChart.data = {
         labels: Object.keys(statusData),
-        datasets: [{ data: Object.values(statusData), backgroundColor: ['#22c55e', '#ef4444', '#f97316', '#3b82f6'] }] // Updated color combination
+        datasets: [{ data: Object.values(statusData), backgroundColor: ['#10b981', '#ef4444', '#f43f5e', '#71717a'] }] // Updated color combination
     };
     statusChart.update();
     
@@ -682,7 +681,7 @@ function updateCharts() {
         datasets: [{ 
             label: 'Total Biaya', 
             data: costValues, 
-            backgroundColor: ['#2dd4bf', '#fde047', '#94a3b8', '#a855f7', '#0ea5e9'], // Updated color combination
+            backgroundColor: ['#0ea5e9', '#d946ef', '#64748b', '#14b8a6', '#f59e0b'], // Updated color combination
             borderRadius: 6, borderWidth: 2, borderColor: 'transparent'
         }]
     };
@@ -1021,4 +1020,4 @@ jsonFileInput.addEventListener('change', (e) => {
 });
 
 // Call handleSignIn() on page load to handle custom token auth
-handleSignIn();
+// handleSignIn(); // Removed this line to prevent automatic pop-up
