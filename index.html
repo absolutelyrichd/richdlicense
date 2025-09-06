@@ -1,104 +1,85 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Koleksi Lisensi</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="bg-gradient-to-br from-slate-900 to-blue-900 text-white min-h-screen flex flex-col">
-  <!-- Login -->
-  <div id="login-screen" class="flex flex-1 items-center justify-center">
-    <div class="bg-slate-800 rounded-xl p-8 shadow-xl text-center">
-      <h1 class="text-3xl font-bold mb-4">Koleksi Lisensi</h1>
-      <p class="mb-6 text-slate-300">Simpan & kelola semua lisensi software Anda</p>
-      <button id="login-button" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-6 py-3 rounded-lg">Login dengan Google</button>
-    </div>
-  </div>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 text-white min-h-screen flex flex-col">
 
-  <!-- App -->
-  <div id="app-screen" class="hidden flex flex-col flex-1">
-    <!-- Navbar -->
-    <header class="bg-slate-800/80 backdrop-blur-md shadow-md p-4 flex justify-between items-center">
-      <h2 class="text-xl font-bold">📑 Koleksi Lisensi</h2>
+  <!-- Navbar -->
+  <header class="sticky top-0 z-50 bg-slate-900/70 backdrop-blur-lg shadow-md border-b border-slate-700">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-yellow-400">🔑 RichD License</h1>
       <div class="flex items-center gap-3">
-        <img id="user-photo" class="w-10 h-10 rounded-full border border-yellow-400" />
+        <img id="user-photo" class="w-10 h-10 rounded-full border-2 border-yellow-400 shadow" />
         <div>
           <p id="user-name" class="font-semibold">Guest</p>
-          <button id="logout-button" class="text-yellow-300 text-sm">Keluar</button>
+          <button id="logout-button" class="text-yellow-300 text-xs hover:text-yellow-200">Keluar</button>
         </div>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 p-6 overflow-y-auto space-y-6">
-      <!-- Actions -->
-      <div class="flex justify-between items-center">
-        <button id="add-license" class="bg-green-500 hover:bg-green-400 px-4 py-2 rounded-lg">+ Tambah Lisensi</button>
-        <button id="download-json" class="bg-indigo-500 hover:bg-indigo-400 px-4 py-2 rounded-lg">⬇️ Export JSON</button>
+  <!-- Main -->
+  <main class="flex-1 max-w-7xl mx-auto w-full p-6 space-y-8">
+
+    <!-- Actions -->
+    <div class="flex flex-wrap justify-between items-center gap-3">
+      <button id="add-license" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-4 py-2 rounded-lg shadow">+ Tambah Lisensi</button>
+      <div class="flex gap-3">
+        <button id="download-json" class="bg-indigo-500 hover:bg-indigo-400 px-4 py-2 rounded-lg shadow">⬇️ Export</button>
+        <button id="upload-json-btn" class="bg-purple-500 hover:bg-purple-400 px-4 py-2 rounded-lg shadow">⬆️ Import</button>
         <input type="file" id="upload-json" class="hidden" accept=".json"/>
-        <button id="upload-json-btn" class="bg-purple-500 hover:bg-purple-400 px-4 py-2 rounded-lg">⬆️ Import JSON</button>
       </div>
+    </div>
 
-      <!-- Lisensi List -->
-      <div class="bg-slate-800 rounded-xl p-4 overflow-x-auto">
-        <table class="w-full text-left">
-          <thead>
-            <tr class="border-b border-slate-600">
-              <th class="p-2">Software</th>
-              <th class="p-2">Kode Lisensi</th>
-              <th class="p-2">Expired</th>
-              <th class="p-2">Harga</th>
-              <th class="p-2">Status</th>
-              <th class="p-2">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="license-list">
-            <tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada data</td></tr>
-          </tbody>
-        </table>
-      </div>
+    <!-- Table -->
+    <div class="bg-slate-800/80 backdrop-blur rounded-2xl shadow-xl overflow-hidden border border-slate-700">
+      <table class="w-full text-left">
+        <thead class="bg-slate-700 sticky top-0">
+          <tr>
+            <th class="p-3">Software</th>
+            <th class="p-3">Kode Lisensi</th>
+            <th class="p-3">Expired</th>
+            <th class="p-3">Harga</th>
+            <th class="p-3">Status</th>
+            <th class="p-3">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="license-list" class="divide-y divide-slate-700">
+          <tr><td colspan="6" class="p-6 text-center text-slate-400">Belum ada data</td></tr>
+        </tbody>
+      </table>
+    </div>
 
-      <!-- Statistik -->
-      <div class="grid md:grid-cols-2 gap-6">
-        <div class="bg-slate-800 p-4 rounded-xl">
-          <h3 class="font-bold mb-2">Status Lisensi</h3>
-          <canvas id="status-chart"></canvas>
-        </div>
-        <div class="bg-slate-800 p-4 rounded-xl">
-          <h3 class="font-bold mb-2">Total Nilai Lisensi</h3>
-          <p id="total-price" class="text-2xl font-bold text-yellow-300">Rp 0</p>
-        </div>
+    <!-- Stats -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 rounded-2xl shadow-lg">
+        <h3 class="font-bold text-lg mb-3">📊 Status Lisensi</h3>
+        <canvas id="status-chart"></canvas>
       </div>
-    </main>
-  </div>
+      <div class="bg-gradient-to-br from-green-600 to-green-800 p-6 rounded-2xl shadow-lg flex flex-col justify-center items-center">
+        <h3 class="font-bold text-lg mb-3">💰 Total Nilai Lisensi</h3>
+        <p id="total-price" class="text-4xl font-extrabold text-yellow-300">Rp 0</p>
+      </div>
+    </div>
+  </main>
 
   <!-- Modal -->
-  <div id="license-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center">
-    <div class="bg-slate-900 p-6 rounded-xl max-w-md w-full">
-      <h3 id="modal-title" class="text-xl font-bold mb-4">Tambah Lisensi</h3>
-      <form id="license-form" class="space-y-3">
+  <div id="license-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center">
+    <div class="bg-slate-900 p-8 rounded-2xl max-w-md w-full shadow-2xl border border-slate-700">
+      <h3 id="modal-title" class="text-xl font-bold mb-6">Tambah Lisensi</h3>
+      <form id="license-form" class="space-y-4">
         <input type="hidden" id="license-id"/>
-        <input id="software" type="text" placeholder="Nama Software" class="w-full p-2 rounded bg-slate-700" required/>
-        <input id="licenseKey" type="text" placeholder="Kode Lisensi" class="w-full p-2 rounded bg-slate-700" required/>
-        <input id="expiry" type="date" class="w-full p-2 rounded bg-slate-700" required/>
-        <input id="price" type="number" placeholder="Harga (Rp)" class="w-full p-2 rounded bg-slate-700"/>
-        <select id="status" class="w-full p-2 rounded bg-slate-700">
+        <input id="software" type="text" placeholder="Nama Software" class="w-full p-3 rounded-lg bg-slate-800 border border-slate-600 focus:ring-2 focus:ring-yellow-400" required/>
+        <input id="licenseKey" type="text" placeholder="Kode Lisensi" class="w-full p-3 rounded-lg bg-slate-800 border border-slate-600 focus:ring-2 focus:ring-yellow-400" required/>
+        <input id="expiry" type="date" class="w-full p-3 rounded-lg bg-slate-800 border border-slate-600 focus:ring-2 focus:ring-yellow-400" required/>
+        <input id="price" type="number" placeholder="Harga (Rp)" class="w-full p-3 rounded-lg bg-slate-800 border border-slate-600 focus:ring-2 focus:ring-yellow-400"/>
+        <select id="status" class="w-full p-3 rounded-lg bg-slate-800 border border-slate-600 focus:ring-2 focus:ring-yellow-400">
           <option>Aktif</option>
           <option>Expired</option>
           <option>Tidak Terpakai</option>
         </select>
-        <div class="flex justify-end gap-3">
-          <button type="button" id="cancel-modal" class="bg-red-500 px-4 py-2 rounded">Batal</button>
-          <button type="submit" class="bg-yellow-400 text-slate-900 font-bold px-4 py-2 rounded">Simpan</button>
+        <div class="flex justify-end gap-4">
+          <button type="button" id="cancel-modal" class="bg-red-500 hover:bg-red-400 px-4 py-2 rounded-lg shadow">Batal</button>
+          <button type="submit" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-4 py-2 rounded-lg shadow">Simpan</button>
         </div>
       </form>
     </div>
   </div>
 
-  <div id="toast" class="hidden fixed bottom-4 right-4 px-4 py-2 rounded text-white"></div>
-
-  <script type="module" src="script.js"></script>
 </body>
-</html>
