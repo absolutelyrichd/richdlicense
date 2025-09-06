@@ -338,7 +338,7 @@ function createLicenseRowHTML(license = {}) {
                     </select>
                 </div>
                 <div>
-                    <label class="block text-gray-400 text-sm font-bold mb-1">Tanggal Kedaluwarsa</label>
+                    <label class="block text-gray-400 text-sm font-bold mb-1">Expired</label>
                     <input type="date" class="license-expiration-date w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" value="${license.expirationDate ? new Date(license.expirationDate.seconds * 1000).toISOString().split('T')[0] : ''}" ${disableExpiration ? 'disabled' : ''}>
                 </div>
             </div>
