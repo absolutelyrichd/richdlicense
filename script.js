@@ -189,6 +189,7 @@ function getLicenseBadgeClasses(type) {
         'Perpetual': 'bg-teal-500/20 text-teal-300',
         'Subscription': 'bg-yellow-500/20 text-yellow-300',
         'Trial': 'bg-gray-500/20 text-gray-300',
+        'Giveaway': 'bg-fuchsia-500/20 text-fuchsia-300', // Warna baru
         'default': 'bg-slate-500/20 text-slate-300'
     };
     return colors[type] || colors['default'];
@@ -199,6 +200,7 @@ function getStatusBadgeClasses(status) {
         'Active': 'bg-green-500/20 text-green-300',
         'Expired': 'bg-red-500/20 text-red-300',
         'Revoked': 'bg-orange-500/20 text-orange-300',
+        'Belum dipakai': 'bg-blue-500/20 text-blue-300', // Warna baru
         'default': 'bg-gray-500/20 text-gray-300'
     };
     return colors[status] || colors['default'];
@@ -306,6 +308,7 @@ function renderLicensesAsCards(licensesToRender) {
 // --- ADD/EDIT MODAL LOGIC ---
 function createLicenseRowHTML(license = {}) {
     const isEdit = !!license.id;
+    const isUnused = license.status === 'Belum dipakai';
     return `
         <div class="license-row p-4 border border-gray-700 rounded-lg space-y-3 relative">
             ${isEdit ? '' : '<button type="button" class="remove-row-btn absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center">&times;</button>'}
@@ -320,6 +323,7 @@ function createLicenseRowHTML(license = {}) {
                         <option ${license.type === 'Perpetual' ? 'selected' : ''}>Perpetual</option>
                         <option ${license.type === 'Subscription' ? 'selected' : ''}>Subscription</option>
                         <option ${license.type === 'Trial' ? 'selected' : ''}>Trial</option>
+                        <option ${license.type === 'Giveaway' ? 'selected' : ''}>Giveaway</option>
                     </select>
                 </div>
                 <div>
@@ -328,11 +332,12 @@ function createLicenseRowHTML(license = {}) {
                         <option ${license.status === 'Active' ? 'selected' : ''}>Active</option>
                         <option ${license.status === 'Expired' ? 'selected' : ''}>Expired</option>
                         <option ${license.status === 'Revoked' ? 'selected' : ''}>Revoked</option>
+                        <option ${license.status === 'Belum dipakai' ? 'selected' : ''}>Belum dipakai</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-gray-400 text-sm font-bold mb-1">Tanggal Kedaluwarsa</label>
-                    <input type="date" class="license-expiration-date w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" value="${license.expirationDate ? new Date(license.expirationDate.seconds * 1000).toISOString().split('T')[0] : ''}">
+                    <input type="date" class="license-expiration-date w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" value="${license.expirationDate ? new Date(license.expirationDate.seconds * 1000).toISOString().split('T')[0] : ''}" ${isUnused ? 'disabled' : ''}>
                 </div>
             </div>
             <div class="mb-2">
@@ -371,6 +376,20 @@ function openModal(license = null) {
         addRowButton.classList.remove('hidden');
     }
     
+    // Add event listener to dynamically disable expiration date input
+    const statusSelect = licenseRowsContainer.querySelector('.license-status');
+    const expirationInput = licenseRowsContainer.querySelector('.license-expiration-date');
+    if (statusSelect && expirationInput) {
+        statusSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'Belum dipakai') {
+                expirationInput.disabled = true;
+                expirationInput.value = ''; // Clear the value
+            } else {
+                expirationInput.disabled = false;
+            }
+        });
+    }
+
     licenseModal.classList.remove('hidden');
     licenseModal.classList.add('flex');
     setTimeout(() => {
@@ -616,14 +635,14 @@ function updateCharts() {
     const typeData = licenses.reduce((acc, license) => { acc[license.type] = (acc[license.type] || 0) + 1; return acc; }, {});
     typeChart.data = {
         labels: Object.keys(typeData),
-        datasets: [{ data: Object.values(typeData), backgroundColor: ['#2dd4bf', '#fde047', '#94a3b8'] }]
+        datasets: [{ data: Object.values(typeData), backgroundColor: ['#2dd4bf', '#fde047', '#94a3b8', '#a855f7'] }]
     };
     typeChart.update();
 
     const statusData = licenses.reduce((acc, license) => { acc[license.status] = (acc[license.status] || 0) + 1; return acc; }, {});
     statusChart.data = {
         labels: Object.keys(statusData),
-        datasets: [{ data: Object.values(statusData), backgroundColor: ['#22c55e', '#ef4444', '#f97316'] }]
+        datasets: [{ data: Object.values(statusData), backgroundColor: ['#22c55e', '#ef4444', '#f97316', '#3b82f6'] }]
     };
     statusChart.update();
     
@@ -635,7 +654,7 @@ function updateCharts() {
         datasets: [{ 
             label: 'Total Biaya', 
             data: costValues, 
-            backgroundColor: ['#2dd4bf', '#fde047', '#94a3b8'],
+            backgroundColor: ['#2dd4bf', '#fde047', '#94a3b8', '#a855f7'],
             borderRadius: 6, borderWidth: 2, borderColor: 'transparent'
         }]
     };

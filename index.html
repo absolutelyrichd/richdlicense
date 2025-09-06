@@ -117,7 +117,9 @@
                     <button id="open-sidebar-button" class="md:hidden text-white hover:text-yellow-300 mr-4 p-2">
                         <i class="ph ph-list text-2xl"></i>
                     </button>
-                    <h1 class="text-2xl font-bold text-white">Dasbor Lisensi</h1>
+                    <!-- Menghapus teks "Dasbor Lisensi" dan menggantinya dengan ikon -->
+                    <i class="ph ph-key text-2xl text-yellow-500 mr-2"></i>
+                    <h1 class="text-2xl font-bold text-white">Lisensi</h1>
                 </div>
                 <nav id="tabs" class="hidden md:flex flex-grow justify-center space-x-2 nav-links-container">
                     <button data-tab="tab-list" class="tab-button tab-active">Daftar Lisensi</button>
@@ -187,12 +189,12 @@
                             <input id="filter-software" type="text" placeholder="Filter berdasarkan software..." class="bg-gray-800 border border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-white placeholder-gray-400">
                             <select id="filter-type" class="bg-gray-800 border border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-white">
                                 <option value="">Semua Tipe</option>
-                                <option>Perpetual</option><option>Subscription</option><option>Trial</option>
+                                <option>Perpetual</option><option>Subscription</option><option>Trial</option><option>Giveaway</option>
                             </select>
                             <input id="filter-key" type="text" placeholder="Filter berdasarkan kunci..." class="bg-gray-800 border border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-white placeholder-gray-400">
                             <select id="filter-status" class="bg-gray-800 border border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-white">
                                 <option value="">Semua Status</option>
-                                <option>Active</option><option>Expired</option><option>Revoked</option>
+                                <option>Active</option><option>Expired</option><option>Revoked</option><option>Belum dipakai</option>
                             </select>
                         </div>
                      </div>
@@ -347,6 +349,7 @@
                                 <option>Perpetual</option>
                                 <option>Subscription</option>
                                 <option>Trial</option>
+                                <option>Giveaway</option>
                             </select>
                         </div>
                     </div>
@@ -359,6 +362,7 @@
                                 <option>Active</option>
                                 <option>Expired</option>
                                 <option>Revoked</option>
+                                <option>Belum dipakai</option>
                             </select>
                         </div>
                     </div>
