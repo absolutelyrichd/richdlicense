@@ -657,7 +657,9 @@ function updateCharts() {
         const mostExpensive = licenses.reduce((max, current) => (current.cost > (max.cost || 0) ? current : max), licenses[0]);
         mostExpensiveLicense = `${mostExpensive.software} (${formatCost(mostExpensive.cost || 0)})`;
     }
-    totalCostElement.textContent = mostExpensiveLicense;
+    // Fixed: Now displays the correct total cost
+    totalCostElement.textContent = formatCost(totalCost);
+    mostExpensiveLicenseElement.textContent = mostExpensiveLicense;
 
     const typeData = licenses.reduce((acc, license) => { acc[license.type] = (acc[license.type] || 0) + 1; return acc; }, {});
     typeChart.data = {
@@ -669,7 +671,7 @@ function updateCharts() {
     const statusData = licenses.reduce((acc, license) => { acc[license.status] = (acc[license.status] || 0) + 1; return acc; }, {});
     statusChart.data = {
         labels: Object.keys(statusData),
-        datasets: [{ data: Object.values(statusData), backgroundColor: ['#10b981', '#ef4444', '#f43f5e', '#71717a'] }] // Updated color combination
+        datasets: [{ data: Object.values(statusData), backgroundColor: ['#22c55e', '#ef4444', '#f59e0b', '#3b82f6'] }] // Updated color combination for better visual contrast
     };
     statusChart.update();
     
