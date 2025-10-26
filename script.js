@@ -310,12 +310,6 @@ function createLicenseRowHTML(license = {}) {
     const isLifetime = license.type === 'Lifetime';
     const disableExpiration = isUnused || isLifetime;
 
-    // BUG FIX 1 (Display): Format tanggal ke YYYY-MM-DD lokal
-    // 'en-CA' locale (Kanada) menggunakan format YYYY-MM-DD secara default.
-    const expirationDateValue = license.expirationDate 
-        ? new Date(license.expirationDate.seconds * 1000).toLocaleDateString('en-CA') 
-        : '';
-
     return `
         <div class="license-row p-4 border border-gray-700 rounded-lg space-y-3 relative">
             ${isEdit ? '' : '<button type="button" class="remove-row-btn absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center">&times;</button>'}
@@ -345,7 +339,7 @@ function createLicenseRowHTML(license = {}) {
                 </div>
                 <div>
                     <label class="block text-gray-400 text-sm font-bold mb-1">Expired</label>
-                    <input type="date" class="license-expiration-date w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" value="${expirationDateValue}" ${disableExpiration ? 'disabled' : ''}>
+                    <input type="date" class="license-expiration-date w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" value="${license.expirationDate ? new Date(license.expirationDate.seconds * 1000).toISOString().split('T')[0] : ''}" ${disableExpiration ? 'disabled' : ''}>
                 </div>
             </div>
             <div class="mb-2">
@@ -447,15 +441,6 @@ licenseModal.addEventListener('click', (e) => {
     if (e.target === licenseModal) closeModal();
 });
 
-// Helper untuk parsing tanggal
-function parseLocalDate(dateString) { // "YYYY-MM-DD"
-    if (!dateString) return null;
-    const parts = dateString.split('-');
-    // new Date(year, monthIndex, day)
-    // Ini membuat tanggal di zona waktu lokal, bukan UTC
-    return new Date(parts[0], parts[1] - 1, parts[2]);
-}
-
 licenseForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!currentUser) {
@@ -467,25 +452,23 @@ licenseForm.addEventListener('submit', async (e) => {
     try {
         if (id) {
             const row = licenseRowsContainer.querySelector('.license-row');
-            
-            // BUG FIX 2 (Edit Save): Parse tanggal sebagai tanggal lokal
-            const expirationDateValue = row.querySelector('.license-expiration-date').value;
-            
             const licenseData = {
                 software: row.querySelector('.software-name').value,
                 type: row.querySelector('.license-type').value,
                 key: row.querySelector('.license-key').value,
                 cost: parseInt(row.querySelector('.license-cost').value, 10),
                 status: row.querySelector('.license-status').value,
-                expirationDate: parseLocalDate(expirationDateValue),
+                expirationDate: row.querySelector('.license-expiration-date').value ? new Date(row.querySelector('.license-expiration-date').value) : null,
                 lastUpdated: new Date()
             };
             
-            if (licenseData.type === 'Lifetime' || licenseData.type === 'Giveaway') {
+            // [PERBAIKAN] Dihapus "|| licenseData.type === 'Giveaway'" agar Giveaway bisa punya tgl expired
+            if (licenseData.type === 'Lifetime') {
                 licenseData.expirationDate = null;
             } else if (licenseData.status === 'Belum dipakai') {
                  licenseData.expirationDate = null;
             }
+            
             if (licenseData.type === 'Giveaway') {
                 licenseData.cost = 0;
             }
@@ -506,24 +489,23 @@ licenseForm.addEventListener('submit', async (e) => {
             const batch = writeBatch(db);
             let licensesAdded = 0;
             rows.forEach(row => {
-                
-                // BUG FIX 3 (Add Save): Parse tanggal sebagai tanggal lokal
-                const expirationDateValue = row.querySelector('.license-expiration-date').value;
-
                 const licenseData = {
                     software: row.querySelector('.software-name').value,
                     type: row.querySelector('.license-type').value,
                     key: row.querySelector('.license-key').value,
                     cost: parseInt(row.querySelector('.license-cost').value, 10),
                     status: row.querySelector('.license-status').value,
-                    expirationDate: parseLocalDate(expirationDateValue),
+                    expirationDate: row.querySelector('.license-expiration-date').value ? new Date(row.querySelector('.license-expiration-date').value) : null,
                     lastUpdated: new Date()
                 };
-                if (licenseData.type === 'Lifetime' || licenseData.type === 'Giveaway') {
+                
+                // [PERBAIKAN] Dihapus "|| licenseData.type === 'Giveaway'" agar Giveaway bisa punya tgl expired
+                if (licenseData.type === 'Lifetime') {
                     licenseData.expirationDate = null;
                 } else if (licenseData.status === 'Belum dipakai') {
                      licenseData.expirationDate = null;
                 }
+                
                 if (licenseData.type === 'Giveaway') {
                     licenseData.cost = 0;
                 }
@@ -1002,8 +984,7 @@ downloadJsonButton.addEventListener('click', () => {
     const dataStr = JSON.stringify(licenses.map(({id, lastUpdated, ...rest}) => {
         // Convert Firestore Timestamp to ISO string for better JSON representation
         if (rest.expirationDate && rest.expirationDate.toDate) {
-            // Gunakan metode yang sama dengan di form untuk konsistensi
-            rest.expirationDate = new Date(rest.expirationDate.seconds * 1000).toLocaleDateString('en-CA');
+            rest.expirationDate = rest.expirationDate.toDate().toISOString().split('T')[0];
         }
         return rest;
     }), null, 2);
@@ -1036,8 +1017,7 @@ jsonFileInput.addEventListener('change', (e) => {
                     importedLicenses.forEach(license => {
                         if (license.software && license.type && license.status) {
                              if (license.expirationDate) {
-                                // Pastikan ini diparse sebagai tanggal lokal
-                                license.expirationDate = parseLocalDate(license.expirationDate);
+                                license.expirationDate = new Date(license.expirationDate);
                             }
                             license.lastUpdated = new Date();
                             const newLicenseRef = doc(licensesCollection);
