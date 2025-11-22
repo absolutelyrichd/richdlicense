@@ -117,24 +117,24 @@ function renderList() {
     // Desktop Table
     pageItems.forEach(l => {
         const row = document.createElement('tr');
-        row.className = 'floating-row border-b border-white/5 hover:bg-white/5 transition-colors group';
+        row.className = 'floating-row border-b border-slate-100 hover:bg-slate-50 transition-colors group';
         
         let statusClass = '';
-        if(l.status === 'Active') statusClass = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
-        else if(l.status === 'Expired') statusClass = 'text-rose-400 bg-rose-400/10 border-rose-400/20';
-        else statusClass = 'text-slate-400 bg-slate-400/10 border-slate-400/20';
+        if(l.status === 'Active') statusClass = 'text-emerald-700 bg-emerald-100 border-emerald-200';
+        else if(l.status === 'Expired') statusClass = 'text-rose-700 bg-rose-100 border-rose-200';
+        else statusClass = 'text-slate-600 bg-slate-100 border-slate-200';
 
         row.innerHTML = `
-            <td class="p-4 pl-6"><input type="checkbox" data-id="${l.id}" class="license-checkbox w-4 h-4 rounded border-slate-600 bg-slate-700 checked:bg-indigo-500"></td>
-            <td class="p-4 font-medium text-white">${l.software}</td>
-            <td class="p-4"><span class="text-xs px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">${l.type}</span></td>
-            <td class="p-4 font-mono text-xs text-slate-400">${l.key || '-'}</td>
-            <td class="p-4 text-indigo-300 font-medium">${l.cost ? formatCost(l.cost) : 'Free'}</td>
-            <td class="p-4 text-slate-400 text-xs">${l.type === 'Lifetime' ? '∞' : formatDate(l.expirationDate)}</td>
-            <td class="p-4 text-center"><span class="text-xs px-2 py-1 rounded-full border ${statusClass}">${l.status}</span></td>
+            <td class="p-4 pl-6"><input type="checkbox" data-id="${l.id}" class="license-checkbox w-4 h-4 rounded border-slate-300 bg-white checked:bg-teal-600 focus:ring-teal-500 text-teal-600"></td>
+            <td class="p-4 font-medium text-slate-900">${l.software}</td>
+            <td class="p-4"><span class="text-xs px-2 py-1 rounded-md bg-teal-50 text-teal-700 border border-teal-200 font-medium">${l.type}</span></td>
+            <td class="p-4 font-mono text-xs text-slate-600">${l.key || '-'}</td>
+            <td class="p-4 text-teal-700 font-bold">${l.cost ? formatCost(l.cost) : 'Free'}</td>
+            <td class="p-4 text-slate-600 text-xs">${l.type === 'Lifetime' ? '∞' : formatDate(l.expirationDate)}</td>
+            <td class="p-4 text-center"><span class="text-xs px-2 py-1 rounded-full border ${statusClass} font-medium">${l.status}</span></td>
             <td class="p-4 pr-6 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                <button class="edit-btn text-slate-400 hover:text-indigo-400 mx-1" data-id="${l.id}"><i class="ph-bold ph-pencil-simple"></i></button>
-                <button class="delete-btn text-slate-400 hover:text-rose-400 mx-1" data-id="${l.id}"><i class="ph-bold ph-trash"></i></button>
+                <button class="edit-btn text-slate-400 hover:text-teal-700 mx-1" data-id="${l.id}"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button class="delete-btn text-slate-400 hover:text-rose-600 mx-1" data-id="${l.id}"><i class="ph-bold ph-trash"></i></button>
             </td>
         `;
         ui.listBody.appendChild(row);
@@ -143,28 +143,34 @@ function renderList() {
     // Mobile Cards (Glass Look)
     pageItems.forEach(l => {
         const card = document.createElement('div');
-        card.className = 'glass-panel p-5 rounded-2xl space-y-3 border-l-4 border-indigo-500/50';
+        card.className = 'glass-panel p-5 rounded-2xl space-y-3 border-l-4 border-teal-500 bg-white/80 shadow-sm';
+        
+        let statusClassMobile = '';
+        if(l.status === 'Active') statusClassMobile = 'text-emerald-700 font-bold';
+        else if(l.status === 'Expired') statusClassMobile = 'text-rose-700 font-bold';
+        else statusClassMobile = 'text-slate-600 font-medium';
+
         card.innerHTML = `
             <div class="flex justify-between items-start">
                 <div>
-                    <h4 class="font-bold text-white text-lg">${l.software}</h4>
-                    <span class="text-xs text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded mt-1 inline-block">${l.type}</span>
+                    <h4 class="font-bold text-slate-900 text-lg">${l.software}</h4>
+                    <span class="text-xs text-teal-800 bg-teal-100 px-2 py-0.5 rounded mt-1 inline-block border border-teal-200 font-medium">${l.type}</span>
                 </div>
-                <button class="edit-btn w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white" data-id="${l.id}"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button class="edit-btn w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 hover:text-teal-700" data-id="${l.id}"><i class="ph-bold ph-pencil-simple"></i></button>
             </div>
             <div class="grid grid-cols-2 gap-2 text-sm mt-2">
-                <div class="text-slate-400">Biaya</div>
-                <div class="text-right font-medium text-white">${l.cost ? formatCost(l.cost) : 'Free'}</div>
-                <div class="text-slate-400">Status</div>
-                <div class="text-right"><span class="${l.status === 'Active' ? 'text-emerald-400' : 'text-rose-400'}">${l.status}</span></div>
+                <div class="text-slate-500">Biaya</div>
+                <div class="text-right font-bold text-slate-800">${l.cost ? formatCost(l.cost) : 'Free'}</div>
+                <div class="text-slate-500">Status</div>
+                <div class="text-right"><span class="${statusClassMobile}">${l.status}</span></div>
+            </div>
+             <!-- Mobile Delete Button -->
+            <div class="pt-2 border-t border-slate-200/50 mt-2">
+                 <button class="delete-btn w-full py-2 text-xs text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 flex items-center justify-center gap-2" data-id="${l.id}">
+                    <i class="ph-bold ph-trash"></i> Hapus Lisensi
+                </button>
             </div>
         `;
-        // Add delete functionality for mobile
-        const delBtn = document.createElement('button');
-        delBtn.className = 'delete-btn w-full py-2 mt-2 text-xs text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500/10';
-        delBtn.innerText = 'Hapus Lisensi';
-        delBtn.dataset.id = l.id;
-        card.appendChild(delBtn);
         
         ui.listCards.appendChild(card);
     });
@@ -221,23 +227,23 @@ const rowContainer = document.getElementById('license-rows-container');
 function createRow(data = {}) {
     const id = Date.now();
     const div = document.createElement('div');
-    div.className = 'license-row glass-panel p-4 rounded-xl relative animate-fade-in';
+    div.className = 'license-row glass-panel p-4 rounded-xl relative animate-fade-in bg-white/50';
     div.innerHTML = `
         ${data.software ? '' : '<button type="button" class="remove-row absolute -top-2 -right-2 w-6 h-6 bg-rose-500 rounded-full text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform">&times;</button>'}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
             <div>
-                <label class="block text-xs text-slate-400 mb-1 ml-1">Software</label>
-                <input type="text" class="field-software w-full glass-input rounded-lg p-2.5 text-sm" value="${data.software || ''}" placeholder="Nama Software">
+                <label class="block text-xs text-slate-500 mb-1 ml-1">Software</label>
+                <input type="text" class="field-software w-full glass-input rounded-lg p-2.5 text-sm text-slate-900 font-medium" value="${data.software || ''}" placeholder="Nama Software">
             </div>
             <div>
-                <label class="block text-xs text-slate-400 mb-1 ml-1">Key / Serial</label>
-                <input type="text" class="field-key w-full glass-input rounded-lg p-2.5 text-sm font-mono" value="${data.key || ''}" placeholder="XXXX-XXXX-XXXX">
+                <label class="block text-xs text-slate-500 mb-1 ml-1">Key / Serial</label>
+                <input type="text" class="field-key w-full glass-input rounded-lg p-2.5 text-sm font-mono text-slate-700" value="${data.key || ''}" placeholder="XXXX-XXXX-XXXX">
             </div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-                <label class="block text-xs text-slate-400 mb-1 ml-1">Tipe</label>
-                <select class="field-type w-full glass-input rounded-lg p-2.5 text-sm">
+                <label class="block text-xs text-slate-500 mb-1 ml-1">Tipe</label>
+                <select class="field-type w-full glass-input rounded-lg p-2.5 text-sm text-slate-700 cursor-pointer">
                     <option ${data.type==='Perpetual'?'selected':''}>Perpetual</option>
                     <option ${data.type==='Subscription'?'selected':''}>Subscription</option>
                     <option ${data.type==='Trial'?'selected':''}>Trial</option>
@@ -245,20 +251,20 @@ function createRow(data = {}) {
                 </select>
             </div>
             <div>
-                <label class="block text-xs text-slate-400 mb-1 ml-1">Status</label>
-                <select class="field-status w-full glass-input rounded-lg p-2.5 text-sm">
+                <label class="block text-xs text-slate-500 mb-1 ml-1">Status</label>
+                <select class="field-status w-full glass-input rounded-lg p-2.5 text-sm text-slate-700 cursor-pointer">
                     <option ${data.status==='Active'?'selected':''}>Active</option>
                     <option ${data.status==='Expired'?'selected':''}>Expired</option>
                     <option ${data.status==='Belum dipakai'?'selected':''}>Belum dipakai</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs text-slate-400 mb-1 ml-1">Harga</label>
-                <input type="number" class="field-cost w-full glass-input rounded-lg p-2.5 text-sm" value="${data.cost || 0}">
+                <label class="block text-xs text-slate-500 mb-1 ml-1">Harga</label>
+                <input type="number" class="field-cost w-full glass-input rounded-lg p-2.5 text-sm text-slate-700" value="${data.cost || 0}">
             </div>
             <div>
-                <label class="block text-xs text-slate-400 mb-1 ml-1">Valid Hingga</label>
-                <input type="date" class="field-date w-full glass-input rounded-lg p-2.5 text-sm" value="${data.expirationDate ? new Date(data.expirationDate.seconds * 1000).toISOString().split('T')[0] : ''}">
+                <label class="block text-xs text-slate-500 mb-1 ml-1">Valid Hingga</label>
+                <input type="date" class="field-date w-full glass-input rounded-lg p-2.5 text-sm text-slate-700 cursor-pointer" value="${data.expirationDate ? new Date(data.expirationDate.seconds * 1000).toISOString().split('T')[0] : ''}">
             </div>
         </div>
     `;
@@ -460,7 +466,7 @@ function renderPagination() {
     for(let i=1; i<=pages; i++) {
         const btn = document.createElement('button');
         btn.innerText = i;
-        btn.className = `w-8 h-8 rounded-lg text-sm font-medium transition-colors ${i===currentPage ? 'bg-indigo-500 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`;
+        btn.className = `w-8 h-8 rounded-lg text-sm font-medium transition-colors ${i===currentPage ? 'bg-teal-600 text-white' : 'bg-white/50 text-slate-500 hover:bg-slate-100'}`;
         btn.addEventListener('click', () => { currentPage = i; renderList(); });
         ui.pagination.appendChild(btn);
     }
@@ -475,8 +481,8 @@ function updateCharts() {
     
     if(!ctxType || !ctxStatus || !ctxCost) return;
 
-    // Theme Colors (Neon Palette)
-    const colors = ['#6366f1', '#ec4899', '#06b6d4', '#8b5cf6', '#10b981'];
+    // Theme Colors (Professional Teal Palette)
+    const colors = ['#0d9488', '#14b8a6', '#f59e0b', '#3b82f6', '#6366f1'];
     
     // Data Prep
     const typeCounts = {};
@@ -492,7 +498,7 @@ function updateCharts() {
     const config = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#94a3b8', font: {family: 'Plus Jakarta Sans'} } } }
+        plugins: { legend: { labels: { color: '#475569', font: {family: 'Plus Jakarta Sans'} } } }
     };
 
     // Destroy old charts
@@ -519,15 +525,15 @@ function updateCharts() {
             datasets: [{ 
                 label: 'Total Biaya', 
                 data: Object.values(costByType), 
-                backgroundColor: '#6366f1', 
+                backgroundColor: '#0d9488', 
                 borderRadius: 8 
             }] 
         },
         options: {
             ...config,
             scales: {
-                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#475569' } },
+                x: { grid: { display: false }, ticks: { color: '#475569' } }
             }
         }
     });
@@ -547,19 +553,25 @@ function showToast(title, msg, isError=false) {
     const t = document.getElementById('toast');
     document.getElementById('toast-title').innerText = title;
     document.getElementById('toast-message').innerText = msg;
-    document.getElementById('toast-icon').className = isError ? 'ph-fill ph-warning-circle text-rose-400 text-xl' : 'ph-fill ph-check-circle text-emerald-400 text-xl';
-    t.className = `fixed top-6 right-6 z-[60] flex items-center gap-3 px-4 py-3 rounded-xl glass-panel border-l-4 transform transition-all duration-300 shadow-2xl translate-x-0 ${isError ? 'border-rose-500' : 'border-emerald-500'}`;
+    document.getElementById('toast-icon').className = isError ? 'ph-fill ph-warning-circle text-rose-500 text-xl' : 'ph-fill ph-check-circle text-emerald-600 text-xl';
     
-    setTimeout(() => t.classList.add('translate-x-full'), 3000);
+    // Reset class to base state first then apply show state
+    t.className = `fixed top-6 right-6 z-[60] flex items-center gap-3 px-4 py-3 rounded-xl glass-panel border-l-4 transition-all duration-300 shadow-2xl transform ${isError ? 'border-rose-500' : 'border-emerald-500'} translate-x-0 opacity-100 bg-white`;
+    
+    // Hide logic
+    setTimeout(() => {
+        t.classList.remove('translate-x-0', 'opacity-100');
+        t.classList.add('translate-x-full', 'opacity-0');
+    }, 3000);
 }
 
 // Tab Logic
 document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active', 'text-white', 'bg-white/5'));
-        document.querySelectorAll('.nav-item').forEach(b => b.classList.add('text-slate-300'));
-        btn.classList.add('active', 'text-white');
-        btn.classList.remove('text-slate-300');
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active', 'text-teal-700', 'bg-teal-500/10', 'border-teal-600'));
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.add('text-slate-500'));
+        btn.classList.add('active', 'text-teal-700');
+        btn.classList.remove('text-slate-500');
 
         const target = btn.dataset.tab;
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
