@@ -294,10 +294,6 @@
                     <button id="add-license-button" class="hidden sm:flex btn-gradient font-medium py-2.5 px-5 rounded-xl items-center shadow-lg shadow-teal-500/20">
                         <i class="ph-bold ph-plus mr-2"></i> Tambah Baru
                     </button>
-                    <!-- Mobile Add Button -->
-                    <button id="add-license-mobile" class="sm:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full btn-gradient flex items-center justify-center shadow-xl shadow-teal-500/30 text-white">
-                        <i class="ph-bold ph-plus text-2xl"></i>
-                    </button>
                 </header>
 
                 <!-- Tab: Daftar Lisensi -->
@@ -457,6 +453,11 @@
             </div>
         </main>
     </div>
+
+    <!-- Mobile Add Button (Floating) - Moved outside to fix positioning issue -->
+    <button id="add-license-mobile" class="sm:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full btn-gradient flex items-center justify-center shadow-xl shadow-teal-500/30 text-white hover:scale-110 transition-transform">
+        <i class="ph-bold ph-plus text-2xl"></i>
+    </button>
 
     <!-- Modals (Modern Glass Style) -->
     <div id="modal-backdrop" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
