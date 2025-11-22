@@ -20,10 +20,11 @@
                             border: 'rgba(255, 255, 255, 0.8)',
                             input: 'rgba(255, 255, 255, 0.9)',
                         },
+                        // Palet Baru: Teal & Slate
                         brand: {
-                            primary: '#6366f1', // Indigo
-                            secondary: '#ec4899', // Pink
-                            accent: '#06b6d4', // Cyan
+                            primary: '#0f766e', // Teal 700
+                            secondary: '#10b981', // Emerald 500
+                            accent: '#f59e0b', // Amber 500
                         }
                     },
                     animation: {
@@ -61,12 +62,12 @@
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f8fafc; /* Slate 50 - Light Background */
-            color: #1e293b; /* Slate 800 - Dark Text */
+            background-color: #f8fafc; /* Slate 50 */
+            color: #334155; /* Slate 700 */
             overflow-x: hidden;
         }
 
-        /* Latar Belakang Aurora Dinamis (Versi Light Mode - Lebih Soft) */
+        /* Latar Belakang Aurora (Versi Teal/Mint) */
         .aurora-bg {
             position: fixed;
             top: 0;
@@ -74,68 +75,70 @@
             width: 100vw;
             height: 100vh;
             z-index: -1;
-            background: #f1f5f9;
+            background: #f8fafc;
             overflow: hidden;
         }
         .aurora-blob {
             position: absolute;
             filter: blur(80px);
-            opacity: 0.25; /* Opacity dikurangi agar tidak terlalu silau di background putih */
+            opacity: 0.3;
             animation: blob 10s infinite alternate;
         }
-        .blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #818cf8; } /* Indigo 400 */
-        .blob-2 { bottom: -10%; right: -10%; width: 600px; height: 600px; background: #f472b6; animation-delay: 2s; } /* Pink 400 */
-        .blob-3 { top: 40%; left: 40%; width: 400px; height: 400px; background: #22d3ee; animation-delay: 4s; } /* Cyan 400 */
+        /* Warna Blob Baru: Teal, Emerald, Amber */
+        .blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #2dd4bf; } /* Teal 400 */
+        .blob-2 { bottom: -10%; right: -10%; width: 600px; height: 600px; background: #34d399; animation-delay: 2s; } /* Emerald 400 */
+        .blob-3 { top: 40%; left: 40%; width: 400px; height: 400px; background: #fcd34d; animation-delay: 4s; } /* Amber 300 */
 
-        /* Glassmorphism Utilities (Versi Light Mode) */
+        /* Glassmorphism Utilities */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.7); /* Putih Transparan */
+            background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05); /* Shadow halus */
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 10px 30px -5px rgba(15, 118, 110, 0.05); /* Shadow bernuansa Teal */
         }
         
         .glass-input {
-            background: rgba(255, 255, 255, 0.8);
-            border: 1px solid #cbd5e1; /* Slate 300 */
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #cbd5e1; 
             color: #0f172a;
             transition: all 0.3s ease;
         }
         .glass-input:focus {
             background: #ffffff;
-            border-color: #6366f1;
+            border-color: #0d9488; /* Teal 600 */
             outline: none;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
         }
         .glass-input::placeholder {
             color: #94a3b8;
         }
 
-        /* Custom Scrollbar */
+        /* Custom Scrollbar (Teal Tint) */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar-thumb:hover { background: #99f6e4; } /* Teal 200 */
 
         /* Interactive Elements */
         .nav-item {
             position: relative;
             transition: all 0.3s ease;
-            color: #64748b; /* Slate 500 */
+            color: #64748b;
         }
         .nav-item.active {
-            color: #4f46e5; /* Indigo 600 */
-            background: rgba(99, 102, 241, 0.08);
-            border-left: 3px solid #6366f1;
+            color: #0f766e; /* Teal 700 */
+            background: rgba(20, 184, 166, 0.1); /* Teal 500 with opacity */
+            border-left: 3px solid #0d9488; /* Teal 600 */
         }
         .nav-item:hover:not(.active) {
             background: rgba(0,0,0,0.02);
-            color: #1e293b;
+            color: #334155;
         }
 
         .btn-gradient {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            /* Gradasi Baru: Teal ke Emerald */
+            background: linear-gradient(135deg, #0d9488 0%, #10b981 100%);
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
@@ -143,24 +146,24 @@
         }
         .btn-gradient:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 20px -10px rgba(16, 185, 129, 0.4); /* Emerald Shadow */
         }
 
         /* Floating Table Rows */
         .floating-row {
             transition: transform 0.2s, background 0.2s;
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.5);
         }
         .floating-row:hover {
             transform: scale(1.01);
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 20px rgba(15, 118, 110, 0.06);
             z-index: 10;
         }
 
         /* Checkbox Custom */
         input[type="checkbox"] {
-            accent-color: #6366f1;
+            accent-color: #0d9488; /* Teal 600 */
             cursor: pointer;
         }
 
@@ -168,7 +171,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="antialiased selection:bg-indigo-100 selection:text-indigo-700">
+<body class="antialiased selection:bg-teal-100 selection:text-teal-800">
 
     <!-- Background Animation -->
     <div class="aurora-bg">
@@ -179,10 +182,10 @@
 
     <!-- Login Screen -->
     <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative z-10">
-        <div class="glass-panel w-full max-w-md rounded-3xl p-10 text-center border-t border-l border-white/50 shadow-2xl relative overflow-hidden bg-white/60">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+        <div class="glass-panel w-full max-w-md rounded-3xl p-10 text-center border-t border-l border-white/60 shadow-xl relative overflow-hidden bg-white/70">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-500 via-emerald-500 to-lime-500"></div>
             
-            <div class="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30 animate-float text-white">
+            <div class="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 shadow-lg shadow-emerald-500/30 animate-float text-white">
                 <i class="ph ph-key text-3xl"></i>
             </div>
             
@@ -192,7 +195,7 @@
             <button id="login-button" class="group w-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold py-3.5 px-6 rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6 mr-3" alt="Google">
                 <span class="text-base">Lanjutkan dengan Google</span>
-                <i class="ph ph-arrow-right ml-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-slate-400"></i>
+                <i class="ph ph-arrow-right ml-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-teal-500"></i>
             </button>
             
             <p class="mt-8 text-xs text-slate-400">Dilindungi oleh Enkripsi End-to-End</p>
@@ -203,12 +206,12 @@
     <div id="app-screen" class="hidden flex h-screen overflow-hidden relative z-10">
         
         <!-- Sidebar (Desktop) -->
-        <aside class="hidden md:flex w-72 flex-col glass-panel border-r border-white/50 m-4 rounded-2xl h-[calc(100vh-2rem)] shadow-xl">
-            <div class="p-6 flex items-center gap-3 border-b border-slate-100">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-pink-500 flex items-center justify-center text-white">
+        <aside class="hidden md:flex w-72 flex-col glass-panel border-r border-white/60 m-4 rounded-2xl h-[calc(100vh-2rem)] shadow-lg bg-white/50">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-200/60">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-teal-500 to-emerald-500 flex items-center justify-center text-white">
                     <i class="ph-bold ph-command"></i>
                 </div>
-                <h1 class="text-xl font-bold text-slate-800 tracking-wide">Nexus<span class="text-indigo-600">App</span></h1>
+                <h1 class="text-xl font-bold text-slate-800 tracking-wide">Nexus<span class="text-teal-600">App</span></h1>
             </div>
 
             <nav id="tabs" class="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
@@ -230,9 +233,9 @@
                 </button>
             </nav>
 
-            <div class="p-4 border-t border-slate-100 bg-white/40">
+            <div class="p-4 border-t border-slate-200/60 bg-white/40">
                 <div class="flex items-center gap-3 mb-3" id="user-profile">
-                    <img id="user-photo" src="" alt="User" class="w-10 h-10 rounded-full ring-2 ring-indigo-100">
+                    <img id="user-photo" src="" alt="User" class="w-10 h-10 rounded-full ring-2 ring-teal-100">
                     <div class="overflow-hidden">
                         <p id="user-name" class="text-sm font-semibold text-slate-700 truncate">User</p>
                         <p class="text-xs text-slate-500">Pro Plan</p>
@@ -245,9 +248,9 @@
         </aside>
 
         <!-- Mobile Header -->
-        <div class="md:hidden fixed top-0 left-0 right-0 z-40 glass-panel border-b border-white/50 px-4 py-3 flex justify-between items-center bg-white/80">
+        <div class="md:hidden fixed top-0 left-0 right-0 z-40 glass-panel border-b border-white/60 px-4 py-3 flex justify-between items-center bg-white/80">
             <div class="flex items-center gap-2">
-                <i class="ph-fill ph-command text-indigo-600 text-xl"></i>
+                <i class="ph-fill ph-command text-teal-600 text-xl"></i>
                 <span class="font-bold text-lg text-slate-800">Nexus</span>
             </div>
             <button id="open-sidebar-button" class="text-slate-600 p-2 rounded-lg hover:bg-slate-100">
@@ -288,11 +291,11 @@
                         <h2 id="page-title" class="text-3xl font-bold text-slate-800 mb-1">Daftar Lisensi</h2>
                         <p class="text-slate-500 text-sm">Kelola aset digital Anda dengan efisien.</p>
                     </div>
-                    <button id="add-license-button" class="hidden sm:flex btn-gradient font-medium py-2.5 px-5 rounded-xl items-center shadow-lg shadow-indigo-500/20">
+                    <button id="add-license-button" class="hidden sm:flex btn-gradient font-medium py-2.5 px-5 rounded-xl items-center shadow-lg shadow-teal-500/20">
                         <i class="ph-bold ph-plus mr-2"></i> Tambah Baru
                     </button>
-                    <!-- Mobile Add Button (Floating) -->
-                    <button id="add-license-mobile" class="sm:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full btn-gradient flex items-center justify-center shadow-xl shadow-indigo-500/30 text-white">
+                    <!-- Mobile Add Button -->
+                    <button id="add-license-mobile" class="sm:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full btn-gradient flex items-center justify-center shadow-xl shadow-teal-500/30 text-white">
                         <i class="ph-bold ph-plus text-2xl"></i>
                     </button>
                 </header>
@@ -300,7 +303,7 @@
                 <!-- Tab: Daftar Lisensi -->
                 <div id="tab-list" class="tab-content fade-enter space-y-6">
                     <!-- Search & Filter Bar -->
-                    <div class="glass-panel rounded-2xl p-4 flex flex-col md:flex-row gap-4">
+                    <div class="glass-panel rounded-2xl p-4 flex flex-col md:flex-row gap-4 bg-white/60">
                         <div class="relative flex-grow">
                             <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                             <input id="filter-software" type="text" placeholder="Cari software, key..." class="w-full pl-10 glass-input rounded-xl py-2.5 px-4 text-sm">
@@ -319,39 +322,39 @@
 
                     <!-- Stats Mini Cards -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="glass-panel p-4 rounded-2xl relative overflow-hidden bg-white/60">
+                        <div class="glass-panel p-4 rounded-2xl relative overflow-hidden bg-white/70">
                             <div class="absolute -right-4 -top-4 text-6xl text-slate-100"><i class="ph-fill ph-check-circle"></i></div>
                             <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Aktif</p>
                             <h3 id="count-active" class="text-2xl font-bold text-emerald-600 mt-1">-</h3>
                         </div>
-                        <div class="glass-panel p-4 rounded-2xl relative overflow-hidden bg-white/60">
+                        <div class="glass-panel p-4 rounded-2xl relative overflow-hidden bg-white/70">
                             <div class="absolute -right-4 -top-4 text-6xl text-slate-100"><i class="ph-fill ph-warning-circle"></i></div>
                             <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Expired</p>
-                            <h3 id="count-expired" class="text-2xl font-bold text-rose-600 mt-1">-</h3>
+                            <h3 id="count-expired" class="text-2xl font-bold text-rose-500 mt-1">-</h3>
                         </div>
-                        <div class="glass-panel p-4 rounded-2xl relative overflow-hidden md:col-span-2 bg-white/60">
+                        <div class="glass-panel p-4 rounded-2xl relative overflow-hidden md:col-span-2 bg-white/70">
                             <div class="absolute -right-4 -top-4 text-6xl text-slate-100"><i class="ph-fill ph-money"></i></div>
                             <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Investasi</p>
-                            <h3 id="total-cost-mini" class="text-2xl font-bold text-indigo-600 mt-1">-</h3>
+                            <h3 id="total-cost-mini" class="text-2xl font-bold text-teal-700 mt-1">-</h3>
                         </div>
                     </div>
 
                     <!-- Table Container -->
-                    <div class="glass-panel rounded-2xl overflow-hidden hidden md:block border-none">
+                    <div class="glass-panel rounded-2xl overflow-hidden hidden md:block border-none bg-white/60">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200 bg-slate-50/50">
-                                    <th class="p-5 w-12"><input type="checkbox" id="select-all-checkbox" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"></th>
-                                    <th class="p-5 font-semibold cursor-pointer hover:text-indigo-600 transition-colors sortable" data-sort="software">Software <span class="sort-icon ml-1"></span></th>
-                                    <th class="p-5 font-semibold cursor-pointer hover:text-indigo-600 transition-colors sortable" data-sort="type">Tipe <span class="sort-icon ml-1"></span></th>
+                                    <th class="p-5 w-12"><input type="checkbox" id="select-all-checkbox" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500"></th>
+                                    <th class="p-5 font-semibold cursor-pointer hover:text-teal-700 transition-colors sortable" data-sort="software">Software <span class="sort-icon ml-1"></span></th>
+                                    <th class="p-5 font-semibold cursor-pointer hover:text-teal-700 transition-colors sortable" data-sort="type">Tipe <span class="sort-icon ml-1"></span></th>
                                     <th class="p-5 font-semibold">Key</th>
-                                    <th class="p-5 font-semibold cursor-pointer hover:text-indigo-600 transition-colors sortable" data-sort="cost">Biaya <span class="sort-icon ml-1"></span></th>
-                                    <th class="p-5 font-semibold cursor-pointer hover:text-indigo-600 transition-colors sortable" data-sort="expirationDate">Valid Hingga <span class="sort-icon ml-1"></span></th>
+                                    <th class="p-5 font-semibold cursor-pointer hover:text-teal-700 transition-colors sortable" data-sort="cost">Biaya <span class="sort-icon ml-1"></span></th>
+                                    <th class="p-5 font-semibold cursor-pointer hover:text-teal-700 transition-colors sortable" data-sort="expirationDate">Valid Hingga <span class="sort-icon ml-1"></span></th>
                                     <th class="p-5 font-semibold text-center">Status</th>
                                     <th class="p-5 text-right">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="license-list-body" class="divide-y divide-slate-100 text-sm text-slate-600">
+                            <tbody id="license-list-body" class="divide-y divide-slate-200/60 text-sm text-slate-600">
                                 <!-- Rows injected here -->
                             </tbody>
                         </table>
@@ -369,11 +372,11 @@
                 <!-- Tab: Statistik -->
                 <div id="tab-stats" class="tab-content hidden fade-enter space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="glass-panel p-6 rounded-2xl border-l-4 border-indigo-500 bg-white/70">
+                        <div class="glass-panel p-6 rounded-2xl border-l-4 border-teal-500 bg-white/70">
                             <h3 class="text-lg font-bold text-slate-800 mb-1">Total Investasi</h3>
-                            <p id="total-cost" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Memuat...</p>
+                            <p id="total-cost" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-600">Memuat...</p>
                         </div>
-                        <div class="glass-panel p-6 rounded-2xl border-l-4 border-pink-500 bg-white/70">
+                        <div class="glass-panel p-6 rounded-2xl border-l-4 border-amber-400 bg-white/70">
                             <h3 class="text-lg font-bold text-slate-800 mb-1">Aset Termahal</h3>
                             <p id="most-expensive-license" class="text-xl font-medium text-slate-700">Memuat...</p>
                         </div>
@@ -403,15 +406,15 @@
 
                 <!-- Tab: Aksi Masal -->
                 <div id="tab-bulk" class="tab-content hidden fade-enter">
-                    <div class="glass-panel p-8 rounded-3xl text-center max-w-2xl mx-auto mt-10 bg-white/60">
-                        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-50 mb-6">
-                            <i class="ph-duotone ph-stack text-4xl text-indigo-600"></i>
+                    <div class="glass-panel p-8 rounded-3xl text-center max-w-2xl mx-auto mt-10 bg-white/70">
+                        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-teal-50 mb-6">
+                            <i class="ph-duotone ph-stack text-4xl text-teal-600"></i>
                         </div>
                         <h2 class="text-2xl font-bold text-slate-800 mb-2">Manajemen Masal</h2>
                         <p id="selection-info" class="text-slate-500 mb-8">Pilih item dari menu 'Daftar Lisensi' untuk mengaktifkan fitur ini.</p>
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button id="bulk-edit-button" disabled class="glass-panel hover:bg-indigo-50 border border-indigo-100 text-indigo-600 py-4 px-6 rounded-xl flex flex-col items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                            <button id="bulk-edit-button" disabled class="glass-panel hover:bg-teal-50 border border-teal-100 text-teal-700 py-4 px-6 rounded-xl flex flex-col items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                 <i class="ph-bold ph-pencil-simple text-2xl"></i>
                                 <span class="font-semibold">Edit Terpilih</span>
                             </button>
@@ -471,13 +474,13 @@
                         <!-- Dynamic Rows -->
                     </div>
                     
-                    <button type="button" id="add-row-button" class="mt-4 w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-500 hover:text-indigo-600 hover:border-indigo-400 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2">
+                    <button type="button" id="add-row-button" class="mt-4 w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-500 hover:text-teal-700 hover:border-teal-400 hover:bg-teal-50 transition-all flex items-center justify-center gap-2">
                         <i class="ph-bold ph-plus"></i> Tambah Item Lain
                     </button>
                 </form>
                 <div class="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50 rounded-b-3xl">
                     <button type="button" id="cancel-button" class="px-5 py-2.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors">Batal</button>
-                    <button type="submit" id="save-form-button" form="license-form" class="px-6 py-2.5 rounded-xl btn-gradient font-medium shadow-lg shadow-indigo-500/20">Simpan Perubahan</button>
+                    <button type="submit" id="save-form-button" form="license-form" class="px-6 py-2.5 rounded-xl btn-gradient font-medium shadow-lg shadow-teal-500/20">Simpan Perubahan</button>
                 </div>
             </div>
         </div>
@@ -508,7 +511,7 @@
                     </div>
                     <div class="flex justify-end gap-3 mt-6">
                         <button type="button" id="bulk-edit-cancel-button" class="px-4 py-2 rounded-lg text-slate-500 hover:text-slate-800">Batal</button>
-                        <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500">Terapkan</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-teal-600 text-white hover:bg-teal-700">Terapkan</button>
                     </div>
                 </form>
             </div>
