@@ -156,7 +156,6 @@
             transition: transform 0.2s, background 0.2s;
         }
         .floating-row:hover {
-            /* PERBAIKAN DI SINI: Menggunakan syntax CSS standar scale() bukan syntax Tailwind scale-[] */
             transform: scale(1.01);
             background: rgba(255,255,255,0.03);
             z-index: 10;
@@ -535,7 +534,7 @@
     </div>
 
     <!-- Toast Notification -->
-    <div id="toast" class="fixed top-6 right-6 z-[60] flex items-center gap-3 px-4 py-3 rounded-xl glass-panel border-l-4 transform translate-x-full transition-transform duration-300 shadow-2xl">
+    <div id="toast" class="fixed top-6 right-6 z-[60] flex items-center gap-3 px-4 py-3 rounded-xl glass-panel border-l-4 transition-all duration-300 transform translate-x-full opacity-0 pointer-events-none shadow-2xl">
         <i id="toast-icon" class="ph-fill ph-check-circle text-xl"></i>
         <div>
             <h4 id="toast-title" class="font-bold text-sm text-white">Sukses</h4>
