@@ -156,7 +156,8 @@
             transition: transform 0.2s, background 0.2s;
         }
         .floating-row:hover {
-            transform: scale-[1.01];
+            /* PERBAIKAN DI SINI: Menggunakan syntax CSS standar scale() bukan syntax Tailwind scale-[] */
+            transform: scale(1.01);
             background: rgba(255,255,255,0.03);
             z-index: 10;
         }
