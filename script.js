@@ -2,8 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// --- Firebase Config and Auth ---
-// The __app_id and __firebase_config variables are provided by the environment.
+// --- CONFIG ---
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const firebaseConfig = {
     apiKey: "AIzaSyBmTmNdBlPc5nroktbiGwFMAkx1Oi6zTBo",
@@ -16,1030 +15,599 @@ const firebaseConfig = {
 };
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const provider = new GoogleAuthProvider(); // Initialize Google Auth Provider
+const provider = new GoogleAuthProvider();
 
 let currentUser = null;
 let licenses = [];
 let filteredLicenses = [];
 let unsubscribe = null; 
-
-// --- Pagination state ---
 let currentPage = 1;
 const licensesPerPage = 10;
+let sortState = { column: 'software', direction: 'asc' };
 
-// --- Sort state ---
-let sortState = {
-    column: 'software', 
-    direction: 'asc'
+// --- UI REFERENCES ---
+const ui = {
+    loginScreen: document.getElementById('login-screen'),
+    appScreen: document.getElementById('app-screen'),
+    loginButton: document.getElementById('login-button'),
+    userPhoto: document.getElementById('user-photo'),
+    userName: document.getElementById('user-name'),
+    logoutBtn: document.getElementById('logout-button-text'),
+    listBody: document.getElementById('license-list-body'),
+    listCards: document.getElementById('license-list-cards'),
+    pagination: document.getElementById('pagination-container'),
+    backdrop: document.getElementById('modal-backdrop'),
+    pageTitle: document.getElementById('page-title'),
+    addBtn: document.getElementById('add-license-button'),
+    addBtnMobile: document.getElementById('add-license-mobile'),
+    statsActive: document.getElementById('count-active'),
+    statsExpired: document.getElementById('count-expired'),
+    statsCostMini: document.getElementById('total-cost-mini')
 };
 
-// --- UI Elements ---
-const loginScreen = document.getElementById('login-screen');
-const appScreen = document.getElementById('app-screen');
-const loginButton = document.getElementById('login-button');
-const logoutButtonText = document.getElementById('logout-button-text');
-const userPhoto = document.getElementById('user-photo');
-const userName = document.getElementById('user-name');
-const licenseListBody = document.getElementById('license-list-body');
-const licenseListCards = document.getElementById('license-list-cards');
-const addLicenseButton = document.getElementById('add-license-button');
-const paginationContainer = document.getElementById('pagination-container');
+// --- FORMATTERS ---
+const formatCost = (cost) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(cost);
+const formatDate = (ts) => {
+    if (!ts) return '-';
+    return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(ts.toDate());
+};
 
-// --- Statistik UI Elements ---
-const totalCostElement = document.getElementById('total-cost');
-const mostExpensiveLicenseElement = document.getElementById('most-expensive-license');
+// --- AUTH LOGIC ---
+ui.loginButton.addEventListener('click', async () => {
+    try { await signInWithPopup(auth, provider); } 
+    catch (e) { showToast('Error', e.message, true); }
+});
 
-// --- Add/Edit Modal Elements ---
-const licenseModal = document.getElementById('license-modal');
-const modalContent = document.getElementById('modal-content');
-const licenseForm = document.getElementById('license-form');
-const cancelButton = document.getElementById('cancel-button');
-const modalTitle = document.getElementById('modal-title');
-const licenseRowsContainer = document.getElementById('license-rows-container');
-const addRowButton = document.getElementById('add-row-button');
-
-// --- Bulk Edit Modal Elements ---
-const bulkEditModal = document.getElementById('bulk-edit-modal');
-const bulkEditModalContent = document.getElementById('bulk-edit-modal-content');
-const bulkEditForm = document.getElementById('bulk-edit-form');
-const bulkEditCancelButton = document.getElementById('bulk-edit-cancel-button');
-const bulkEditInfo = document.getElementById('bulk-edit-info');
-
-// --- Delete Confirmation Modal Elements ---
-const deleteConfirmModal = document.getElementById('delete-confirm-modal');
-const deleteConfirmModalContent = document.getElementById('delete-confirm-modal-content');
-const deleteConfirmMessage = document.getElementById('delete-confirm-message');
-const cancelDeleteButton = document.getElementById('cancel-delete-button');
-const confirmDeleteButton = document.getElementById('confirm-delete-button');
-let licenseIdToDelete = null; 
-let currentConfirmCallback = null; 
-
-// --- Mobile Elements ---
-const sidebar = document.getElementById('sidebar');
-const openSidebarButton = document.getElementById('open-sidebar-button');
-const closeSidebarButton = document.getElementById('close-sidebar-button');
-const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
-
-// --- Chart instances ---
-let typeChart, statusChart, costChart;
-
-// --- Helper for Date Formatting ---
-function formatDate(timestamp) {
-    if (!timestamp) return 'Tidak ada';
-    const date = timestamp.toDate();
-    return new Intl.DateTimeFormat('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    }).format(date);
-}
-
-// --- Helper function to format price as currency ---
-function formatCost(cost) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0
-    }).format(cost);
-}
-
-// --- MOBILE SIDEBAR LOGIC ---
-function openSidebar() {
-    sidebar.classList.remove('-translate-x-full');
-    mobileMenuBackdrop.classList.remove('hidden');
-}
-
-function closeSidebar() {
-    sidebar.classList.add('-translate-x-full');
-    mobileMenuBackdrop.classList.add('hidden');
-}
-
-openSidebarButton.addEventListener('click', openSidebar);
-closeSidebarButton.addEventListener('click', closeSidebar);
-mobileMenuBackdrop.addEventListener('click', closeSidebar);
-
-// --- TOAST/ALERT FUNCTION ---
-function showToast(message, isError = false) {
-    const toast = document.getElementById('toast');
-    const toastMessage = document.getElementById('toast-message');
-    toastMessage.textContent = message;
-    toast.className = `fixed bottom-5 right-1/2 translate-x-1/2 w-11/12 max-w-sm text-white py-2 px-4 rounded-lg shadow-lg transform transition-all duration-300 z-50 ${isError ? 'bg-red-500' : 'bg-green-500'} translate-y-0 opacity-100`;
-    setTimeout(() => {
-        toast.className = toast.className.replace('translate-y-0 opacity-100', 'translate-y-20 opacity-0');
-    }, 3000);
-}
-
-// --- AUTHENTICATION ---
-async function handleSignIn() {
-    try {
-        await signInWithPopup(auth, provider);
-    } catch (error) {
-        console.error("Error signing in with Google: ", error);
-        showToast(`Gagal masuk: ${error.message}`, true);
-    }
-}
-
-loginButton.addEventListener('click', handleSignIn);
-
-if (logoutButtonText) {
-    logoutButtonText.addEventListener('click', () => {
-        signOut(auth);
-    });
-}
+ui.logoutBtn.addEventListener('click', () => signOut(auth));
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
-        loginScreen.classList.add('hidden');
-        appScreen.classList.remove('hidden');
-        
-        userPhoto.src = user.photoURL || 'https://placehold.co/40x40/e2e8f0/e2e8f0';
-        userName.textContent = user.displayName || 'Pengguna Anonim';
-        
-        const userProfileInfo = document.querySelector('#user-profile > div');
-        if (userProfileInfo) userProfileInfo.classList.remove('hidden');
-        
+        ui.loginScreen.classList.add('hidden');
+        ui.appScreen.classList.remove('hidden');
+        ui.userPhoto.src = user.photoURL || 'https://placehold.co/40x40';
+        ui.userName.textContent = user.displayName || 'User';
         fetchLicenses();
     } else {
         currentUser = null;
-        loginScreen.classList.remove('hidden');
-        appScreen.classList.add('hidden');
-        
-        const userProfileInfo = document.querySelector('#user-profile > div');
-        if (userProfileInfo) userProfileInfo.classList.add('hidden');
-
+        ui.loginScreen.classList.remove('hidden');
+        ui.appScreen.classList.add('hidden');
         if (unsubscribe) unsubscribe();
-        licenses = [];
-        filteredLicenses = [];
-        displayPage();
-        updateCharts();
     }
 });
 
-// --- Helper for Badge Classes ---
-function getLicenseBadgeClasses(type) {
-    const colors = {
-        'Perpetual': 'bg-teal-500/20 text-teal-300',
-        'Subscription': 'bg-yellow-500/20 text-yellow-300',
-        'Trial': 'bg-gray-500/20 text-gray-300',
-        'Giveaway': 'bg-fuchsia-500/20 text-fuchsia-300',
-        'Lifetime': 'bg-orange-500/20 text-orange-300',
-        'default': 'bg-slate-500/20 text-slate-300'
-    };
-    return colors[type] || colors['default'];
-}
-
-function getStatusBadgeClasses(status) {
-    const colors = {
-        'Active': 'bg-green-500/20 text-green-300',
-        'Expired': 'bg-red-500/20 text-red-300',
-        'Revoked': 'bg-orange-500/20 text-orange-300',
-        'Belum dipakai': 'bg-blue-500/20 text-blue-300',
-        'default': 'bg-gray-500/20 text-gray-300'
-    };
-    return colors[status] || colors['default'];
-}
-
-// --- CRUD FUNCTIONS ---
+// --- DATA FETCHING ---
 function fetchLicenses() {
-    if (!currentUser) return;
-    const licensesCollectionRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses');
-
-    const q = query(licensesCollectionRef, orderBy("software")); 
-
+    const q = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses'), orderBy("software"));
     unsubscribe = onSnapshot(q, (snapshot) => {
         licenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        licenses.sort((a, b) => (a.software || '').localeCompare((b.software || ''), undefined, { sensitivity: 'base' }));
-        applyFiltersAndSort();
+        applyFilters();
         updateCharts();
-        updateBulkActionUI();
-    }, (error) => {
-        console.error("Error fetching licenses: ", error);
-        showToast("Gagal memuat data lisensi. Periksa konfigurasi.", true);
+        updateMiniStats();
     });
 }
 
-function renderLicenses(licensesToRender) {
-    licenseListBody.innerHTML = '';
-    licenseListCards.innerHTML = '';
-    
-    if (!licensesToRender || licensesToRender.length === 0) {
-        licenseListBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-400">Tidak ada lisensi yang cocok dengan filter atau belum ada lisensi ditambahkan.</td></tr>';
-        licenseListCards.innerHTML = '<div id="license-list-cards-empty" class="text-center p-8 text-gray-400">Tidak ada lisensi yang cocok dengan filter atau belum ada lisensi ditambahkan.</div>';
+function updateMiniStats() {
+    const active = licenses.filter(l => l.status === 'Active').length;
+    const expired = licenses.filter(l => l.status === 'Expired').length;
+    const total = licenses.reduce((acc, l) => acc + (l.cost || 0), 0);
+
+    ui.statsActive.innerText = active;
+    ui.statsExpired.innerText = expired;
+    ui.statsCostMini.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', notation: "compact" }).format(total);
+}
+
+// --- RENDERING ---
+function renderList() {
+    ui.listBody.innerHTML = '';
+    ui.listCards.innerHTML = '';
+
+    const start = (currentPage - 1) * licensesPerPage;
+    const pageItems = filteredLicenses.slice(start, start + licensesPerPage);
+
+    if (pageItems.length === 0) {
+        ui.listBody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-slate-500 italic">Tidak ada data ditemukan.</td></tr>`;
+        ui.listCards.innerHTML = `<div class="text-center p-8 text-slate-500 italic">Tidak ada data.</div>`;
         return;
     }
 
-    renderLicensesAsTable(licensesToRender);
-    renderLicensesAsCards(licensesToRender);
-
-    document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', handleEdit));
-    document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', handleDelete));
-    document.querySelectorAll('.license-checkbox').forEach(cb => cb.addEventListener('change', updateBulkActionUI));
-    updateSortIcons();
-}
-
-function renderLicensesAsTable(licensesToRender) {
-    licensesToRender.forEach(license => {
+    // Desktop Table
+    pageItems.forEach(l => {
         const row = document.createElement('tr');
-        row.className = 'border-b border-gray-700 hover:bg-gray-800/50 transition-colors';
+        row.className = 'floating-row border-b border-white/5 hover:bg-white/5 transition-colors group';
+        
+        let statusClass = '';
+        if(l.status === 'Active') statusClass = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+        else if(l.status === 'Expired') statusClass = 'text-rose-400 bg-rose-400/10 border-rose-400/20';
+        else statusClass = 'text-slate-400 bg-slate-400/10 border-slate-400/20';
+
         row.innerHTML = `
-            <td class="p-4"><input type="checkbox" data-id="${license.id}" class="license-checkbox rounded bg-gray-700 border-gray-500 text-yellow-500 focus:ring-yellow-400"></td>
-            <td class="p-4 font-medium">${license.software || ''}</td>
-            <td class="p-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getLicenseBadgeClasses(license.type)}">${license.type || ''}</span></td>
-            <td class="p-4 text-gray-400">${license.key || ''}</td>
-            <td class="p-4 text-yellow-300">${license.cost ? formatCost(license.cost) : 'Gratis'}</td>
-            <td class="p-4 text-gray-400">${license.type === 'Lifetime' ? 'Lifetime' : formatDate(license.expirationDate)}</td>
-            <td class="p-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClasses(license.status)}">${license.status || ''}</span></td>
-            <td class="p-4 whitespace-nowrap">
-                <button class="edit-btn p-1 text-gray-400 hover:text-white" data-id="${license.id}"><i class="ph ph-note-pencil"></i></button>
-                <button class="delete-btn p-1 text-gray-400 hover:text-red-400" data-id="${license.id}"><i class="ph ph-trash"></i></button>
+            <td class="p-4 pl-6"><input type="checkbox" data-id="${l.id}" class="license-checkbox w-4 h-4 rounded border-slate-600 bg-slate-700 checked:bg-indigo-500"></td>
+            <td class="p-4 font-medium text-white">${l.software}</td>
+            <td class="p-4"><span class="text-xs px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">${l.type}</span></td>
+            <td class="p-4 font-mono text-xs text-slate-400">${l.key || '-'}</td>
+            <td class="p-4 text-indigo-300 font-medium">${l.cost ? formatCost(l.cost) : 'Free'}</td>
+            <td class="p-4 text-slate-400 text-xs">${l.type === 'Lifetime' ? '∞' : formatDate(l.expirationDate)}</td>
+            <td class="p-4 text-center"><span class="text-xs px-2 py-1 rounded-full border ${statusClass}">${l.status}</span></td>
+            <td class="p-4 pr-6 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="edit-btn text-slate-400 hover:text-indigo-400 mx-1" data-id="${l.id}"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button class="delete-btn text-slate-400 hover:text-rose-400 mx-1" data-id="${l.id}"><i class="ph-bold ph-trash"></i></button>
             </td>
         `;
-        licenseListBody.appendChild(row);
+        ui.listBody.appendChild(row);
     });
-}
 
-function renderLicensesAsCards(licensesToRender) {
-    licensesToRender.forEach(license => {
+    // Mobile Cards (Glass Look)
+    pageItems.forEach(l => {
         const card = document.createElement('div');
-        card.className = 'card-item bg-gray-900/50 rounded-xl shadow-lg p-4 border border-gray-700 backdrop-blur-md space-y-2 fade-in';
+        card.className = 'glass-panel p-5 rounded-2xl space-y-3 border-l-4 border-indigo-500/50';
         card.innerHTML = `
-            <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                    <input type="checkbox" data-id="${license.id}" class="license-checkbox rounded bg-gray-700 border-gray-500 text-yellow-500 focus:ring-yellow-400">
-                    <span class="font-bold text-lg text-white">${license.software || ''}</span>
+            <div class="flex justify-between items-start">
+                <div>
+                    <h4 class="font-bold text-white text-lg">${l.software}</h4>
+                    <span class="text-xs text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded mt-1 inline-block">${l.type}</span>
                 </div>
-                <div class="flex space-x-1">
-                    <button class="edit-btn p-1 text-gray-400 hover:text-white" data-id="${license.id}"><i class="ph ph-note-pencil"></i></button>
-                    <button class="delete-btn p-1 text-gray-400 hover:text-red-400" data-id="${license.id}"><i class="ph ph-trash"></i></button>
-                </div>
+                <button class="edit-btn w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white" data-id="${l.id}"><i class="ph-bold ph-pencil-simple"></i></button>
             </div>
-            <div class="flex justify-between text-sm text-gray-400">
-                <span>Tipe:</span>
-                <span class="font-semibold text-white"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getLicenseBadgeClasses(license.type)}">${license.type || ''}</span></span>
-            </div>
-            <div class="flex justify-between text-sm text-gray-400">
-                <span>Kunci Lisensi:</span>
-                <span class="font-semibold text-white truncate max-w-[150px]">${license.key || ''}</span>
-            </div>
-            <div class="flex justify-between text-sm text-gray-400">
-                <span>Biaya:</span>
-                <span class="font-semibold text-yellow-300">${license.cost ? formatCost(license.cost) : 'Gratis'}</span>
-            </div>
-            <div class="flex justify-between text-sm text-gray-400">
-                <span>Status:</span>
-                <span class="font-semibold text-white"><span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClasses(license.status)}">${license.status || ''}</span></span>
-            </div>
-            <div class="flex justify-between text-sm text-gray-400">
-                <span>Kedaluwarsa:</span>
-                <span class="font-semibold text-white">${license.type === 'Lifetime' ? 'Lifetime' : formatDate(license.expirationDate)}</span>
+            <div class="grid grid-cols-2 gap-2 text-sm mt-2">
+                <div class="text-slate-400">Biaya</div>
+                <div class="text-right font-medium text-white">${l.cost ? formatCost(l.cost) : 'Free'}</div>
+                <div class="text-slate-400">Status</div>
+                <div class="text-right"><span class="${l.status === 'Active' ? 'text-emerald-400' : 'text-rose-400'}">${l.status}</span></div>
             </div>
         `;
-        licenseListCards.appendChild(card);
+        // Add delete functionality for mobile
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn w-full py-2 mt-2 text-xs text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500/10';
+        delBtn.innerText = 'Hapus Lisensi';
+        delBtn.dataset.id = l.id;
+        card.appendChild(delBtn);
+        
+        ui.listCards.appendChild(card);
     });
+
+    attachEventListeners();
+    renderPagination();
 }
 
-// --- ADD/EDIT MODAL LOGIC ---
-function createLicenseRowHTML(license = {}) {
-    const isEdit = !!license.id;
-    const isUnused = license.status === 'Belum dipakai';
-    const isLifetime = license.type === 'Lifetime';
-    const disableExpiration = isUnused || isLifetime;
+function attachEventListeners() {
+    document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', (e) => openModal(e.currentTarget.dataset.id)));
+    document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', (e) => confirmDelete(e.currentTarget.dataset.id)));
+    document.querySelectorAll('.license-checkbox').forEach(c => c.addEventListener('change', updateBulkUI));
+}
 
-    return `
-        <div class="license-row p-4 border border-gray-700 rounded-lg space-y-3 relative">
-            ${isEdit ? '' : '<button type="button" class="remove-row-btn absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center">&times;</button>'}
-            <div class="mb-2">
-                <label class="block text-gray-400 text-sm font-bold mb-1">Nama Software</label>
-                <input type="text" class="software-name w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" value="${license.software || ''}" required>
+// --- MODAL SYSTEM ---
+const modals = {
+    form: document.getElementById('license-modal'),
+    bulk: document.getElementById('bulk-edit-modal'),
+    delete: document.getElementById('delete-confirm-modal')
+};
+
+function showModal(modalId) {
+    ui.backdrop.classList.remove('hidden');
+    Object.values(modals).forEach(m => m.classList.add('hidden'));
+    document.getElementById(modalId).classList.remove('hidden');
+    
+    // Animation
+    setTimeout(() => {
+        ui.backdrop.classList.remove('opacity-0');
+        document.getElementById(modalId).firstElementChild.classList.remove('scale-95');
+    }, 10);
+}
+
+function hideAllModals() {
+    ui.backdrop.classList.add('opacity-0');
+    document.querySelectorAll('#modal-backdrop > div > div').forEach(el => el.classList.add('scale-95'));
+    setTimeout(() => {
+        ui.backdrop.classList.add('hidden');
+        Object.values(modals).forEach(m => m.classList.add('hidden'));
+    }, 300);
+}
+
+ui.backdrop.addEventListener('click', (e) => {
+    if (e.target === ui.backdrop) hideAllModals();
+});
+document.getElementById('cancel-button').addEventListener('click', hideAllModals);
+document.getElementById('cancel-button-x').addEventListener('click', hideAllModals);
+document.getElementById('cancel-delete-button').addEventListener('click', hideAllModals);
+document.getElementById('bulk-edit-cancel-button').addEventListener('click', hideAllModals);
+
+// --- FORM HANDLING ---
+const rowContainer = document.getElementById('license-rows-container');
+
+function createRow(data = {}) {
+    const id = Date.now();
+    const div = document.createElement('div');
+    div.className = 'license-row glass-panel p-4 rounded-xl relative animate-fade-in';
+    div.innerHTML = `
+        ${data.software ? '' : '<button type="button" class="remove-row absolute -top-2 -right-2 w-6 h-6 bg-rose-500 rounded-full text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform">&times;</button>'}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1 ml-1">Software</label>
+                <input type="text" class="field-software w-full glass-input rounded-lg p-2.5 text-sm" value="${data.software || ''}" placeholder="Nama Software">
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                <div>
-                    <label class="block text-gray-400 text-sm font-bold mb-1">Tipe Lisensi</label>
-                    <select class="license-type w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
-                        <option ${license.type === 'Perpetual' ? 'selected' : ''}>Perpetual</option>
-                        <option ${license.type === 'Subscription' ? 'selected' : ''}>Subscription</option>
-                        <option ${license.type === 'Trial' ? 'selected' : ''}>Trial</option>
-                        <option ${license.type === 'Giveaway' ? 'selected' : ''}>Giveaway</option>
-                        <option ${license.type === 'Lifetime' ? 'selected' : ''}>Lifetime</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-gray-400 text-sm font-bold mb-1">Status Lisensi</label>
-                    <select class="license-status w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" ${isLifetime ? '' : ''}>
-                        <option ${license.status === 'Active' ? 'selected' : ''}>Active</option>
-                        <option ${license.status === 'Expired' ? 'selected' : ''}>Expired</option>
-                        <option ${license.status === 'Revoked' ? 'selected' : ''}>Revoked</option>
-                        <option ${license.status === 'Belum dipakai' ? 'selected' : ''}>Belum dipakai</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-gray-400 text-sm font-bold mb-1">Expired</label>
-                    <input type="date" class="license-expiration-date w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" value="${license.expirationDate ? new Date(license.expirationDate.seconds * 1000).toISOString().split('T')[0] : ''}" ${disableExpiration ? 'disabled' : ''}>
-                </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1 ml-1">Key / Serial</label>
+                <input type="text" class="field-key w-full glass-input rounded-lg p-2.5 text-sm font-mono" value="${data.key || ''}" placeholder="XXXX-XXXX-XXXX">
             </div>
-            <div class="mb-2">
-                <label class="block text-gray-400 text-sm font-bold mb-1">Kunci Lisensi</label>
-                <input type="text" class="license-key w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" value="${license.key || ''}">
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1 ml-1">Tipe</label>
+                <select class="field-type w-full glass-input rounded-lg p-2.5 text-sm">
+                    <option ${data.type==='Perpetual'?'selected':''}>Perpetual</option>
+                    <option ${data.type==='Subscription'?'selected':''}>Subscription</option>
+                    <option ${data.type==='Trial'?'selected':''}>Trial</option>
+                    <option ${data.type==='Lifetime'?'selected':''}>Lifetime</option>
+                </select>
             </div>
-            <div class="mb-2">
-                <label class="block text-gray-400 text-sm font-bold mb-1">Biaya (IDR)</label>
-                <input type="number" id="license-cost-input" class="license-cost w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none" value="${license.cost || '0'}" min="0">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1 ml-1">Status</label>
+                <select class="field-status w-full glass-input rounded-lg p-2.5 text-sm">
+                    <option ${data.status==='Active'?'selected':''}>Active</option>
+                    <option ${data.status==='Expired'?'selected':''}>Expired</option>
+                    <option ${data.status==='Belum dipakai'?'selected':''}>Belum dipakai</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1 ml-1">Harga</label>
+                <input type="number" class="field-cost w-full glass-input rounded-lg p-2.5 text-sm" value="${data.cost || 0}">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1 ml-1">Valid Hingga</label>
+                <input type="date" class="field-date w-full glass-input rounded-lg p-2.5 text-sm" value="${data.expirationDate ? new Date(data.expirationDate.seconds * 1000).toISOString().split('T')[0] : ''}">
             </div>
         </div>
     `;
+    return div;
 }
 
-function addNewLicenseRow() {
-    licenseRowsContainer.insertAdjacentHTML('beforeend', createLicenseRowHTML());
-}
-
-licenseRowsContainer.addEventListener('click', (e) => {
-    if (e.target.matches('.remove-row-btn')) {
-        e.target.closest('.license-row').remove();
+function openModal(id = null) {
+    rowContainer.innerHTML = '';
+    document.getElementById('license-id').value = id || '';
+    
+    if (id) {
+        const l = licenses.find(x => x.id === id);
+        rowContainer.appendChild(createRow(l));
+        document.getElementById('modal-title').innerText = 'Edit Lisensi';
+        document.getElementById('add-row-button').classList.add('hidden');
+    } else {
+        rowContainer.appendChild(createRow());
+        document.getElementById('modal-title').innerText = 'Tambah Lisensi Baru';
+        document.getElementById('add-row-button').classList.remove('hidden');
     }
+    showModal('license-modal');
+}
+
+document.getElementById('add-row-button').addEventListener('click', () => {
+    rowContainer.appendChild(createRow());
 });
 
-function openModal(license = null) {
-    licenseRowsContainer.innerHTML = '';
-    document.getElementById('license-id').value = license ? license.id : '';
-    
-    if (license) { // Edit mode
-        modalTitle.textContent = 'Edit Lisensi';
-        licenseRowsContainer.innerHTML = createLicenseRowHTML(license);
-        addRowButton.classList.add('hidden');
-    } else { // Add mode
-        modalTitle.textContent = 'Tambah Lisensi Baru';
-        addNewLicenseRow();
-        addRowButton.classList.remove('hidden');
-    }
-    
-    // Add event listener to dynamically disable expiration date, status, and cost inputs
-    const typeSelect = licenseRowsContainer.querySelector('.license-type');
-    const statusSelect = licenseRowsContainer.querySelector('.license-status');
-    const expirationInput = licenseRowsContainer.querySelector('.license-expiration-date');
-    const costInput = licenseRowsContainer.querySelector('.license-cost');
-    
-    if (typeSelect && statusSelect && expirationInput && costInput) {
-        const checkFields = () => {
-            const isUnused = statusSelect.value === 'Belum dipakai';
-            const isLifetime = typeSelect.value === 'Lifetime';
-            const isGiveaway = typeSelect.value === 'Giveaway';
-
-            // Logika untuk Biaya (IDR)
-            if (isGiveaway) {
-                costInput.disabled = true;
-                costInput.value = '0'; // Set nilai ke 0
-            } else {
-                costInput.disabled = false;
-            }
-
-            // Logika untuk Expired Date
-            if (isLifetime) {
-                expirationInput.disabled = true;
-                expirationInput.value = ''; // Clear value
-            } else {
-                statusSelect.disabled = false;
-                expirationInput.disabled = isUnused;
-            }
-
-            if (isUnused && !isLifetime) {
-                expirationInput.disabled = true;
-                expirationInput.value = ''; // Clear value
-            }
-        };
-
-        typeSelect.addEventListener('change', checkFields);
-        statusSelect.addEventListener('change', checkFields);
-        // Initial check when the modal is opened
-        checkFields();
-    }
-
-    licenseModal.classList.remove('hidden');
-    licenseModal.classList.add('flex');
-    setTimeout(() => {
-        modalContent.classList.remove('scale-95', 'opacity-0');
-    }, 10);
-}
-
-function closeModal() {
-    modalContent.classList.add('scale-95', 'opacity-0');
-    setTimeout(() => {
-        licenseModal.classList.add('hidden');
-        licenseModal.classList.remove('flex');
-    }, 200);
-}
-
-addLicenseButton.addEventListener('click', () => openModal());
-addRowButton.addEventListener('click', addNewLicenseRow);
-cancelButton.addEventListener('click', closeModal);
-licenseModal.addEventListener('click', (e) => {
-    if (e.target === licenseModal) closeModal();
+rowContainer.addEventListener('click', e => {
+    if(e.target.classList.contains('remove-row')) e.target.parentElement.remove();
 });
 
-licenseForm.addEventListener('submit', async (e) => {
+ui.addBtn.addEventListener('click', () => openModal());
+ui.addBtnMobile.addEventListener('click', () => openModal());
+
+document.getElementById('license-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!currentUser) {
-        showToast("Anda harus masuk untuk menyimpan data.", true);
-        return;
-    }
     const id = document.getElementById('license-id').value;
+    const rows = rowContainer.querySelectorAll('.license-row');
     
     try {
-        if (id) {
-            const row = licenseRowsContainer.querySelector('.license-row');
-            const licenseData = {
-                software: row.querySelector('.software-name').value,
-                type: row.querySelector('.license-type').value,
-                key: row.querySelector('.license-key').value,
-                cost: parseInt(row.querySelector('.license-cost').value, 10),
-                status: row.querySelector('.license-status').value,
-                expirationDate: row.querySelector('.license-expiration-date').value ? new Date(row.querySelector('.license-expiration-date').value) : null,
+        const batch = writeBatch(db);
+        const colRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses');
+        let count = 0;
+
+        rows.forEach(row => {
+            const data = {
+                software: row.querySelector('.field-software').value,
+                key: row.querySelector('.field-key').value,
+                type: row.querySelector('.field-type').value,
+                status: row.querySelector('.field-status').value,
+                cost: parseInt(row.querySelector('.field-cost').value) || 0,
                 lastUpdated: new Date()
             };
             
-            // [PERBAIKAN] Dihapus "|| licenseData.type === 'Giveaway'" agar Giveaway bisa punya tgl expired
-            if (licenseData.type === 'Lifetime') {
-                licenseData.expirationDate = null;
-            } else if (licenseData.status === 'Belum dipakai') {
-                 licenseData.expirationDate = null;
-            }
-            
-            if (licenseData.type === 'Giveaway') {
-                licenseData.cost = 0;
-            }
-            if (!licenseData.software) {
-                showToast("Nama software tidak boleh kosong.", true);
-                return;
-            }
-            const licenseRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses', id);
-            await updateDoc(licenseRef, licenseData);
-            showToast('Lisensi berhasil diperbarui!');
-        } else {
-            const rows = licenseRowsContainer.querySelectorAll('.license-row');
-            if (rows.length === 0) {
-                showToast("Tidak ada lisensi untuk ditambahkan.", true);
-                return;
-            }
-            
-            const batch = writeBatch(db);
-            let licensesAdded = 0;
-            rows.forEach(row => {
-                const licenseData = {
-                    software: row.querySelector('.software-name').value,
-                    type: row.querySelector('.license-type').value,
-                    key: row.querySelector('.license-key').value,
-                    cost: parseInt(row.querySelector('.license-cost').value, 10),
-                    status: row.querySelector('.license-status').value,
-                    expirationDate: row.querySelector('.license-expiration-date').value ? new Date(row.querySelector('.license-expiration-date').value) : null,
-                    lastUpdated: new Date()
-                };
-                
-                // [PERBAIKAN] Dihapus "|| licenseData.type === 'Giveaway'" agar Giveaway bisa punya tgl expired
-                if (licenseData.type === 'Lifetime') {
-                    licenseData.expirationDate = null;
-                } else if (licenseData.status === 'Belum dipakai') {
-                     licenseData.expirationDate = null;
-                }
-                
-                if (licenseData.type === 'Giveaway') {
-                    licenseData.cost = 0;
-                }
-                if (licenseData.software) {
-                    const newLicenseRef = doc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses'));
-                    batch.set(newLicenseRef, licenseData);
-                    licensesAdded++;
-                }
-            });
-            
-            if (licensesAdded > 0) {
-                await batch.commit();
-                showToast(`${licensesAdded} lisensi berhasil ditambahkan!`);
-            } else {
-                showToast("Tidak ada lisensi untuk ditambahkan.", true);
-                return;
-            }
-        }
-        closeModal();
-    } catch (error) {
-        console.error("Error saving license(s): ", error);
-        showToast(`Gagal menyimpan: ${error.message}`, true);
-    }
-});
+            const dateVal = row.querySelector('.field-date').value;
+            if(dateVal && data.type !== 'Lifetime') data.expirationDate = new Date(dateVal);
+            else data.expirationDate = null;
 
-function handleEdit(e) {
-    const id = e.currentTarget.dataset.id;
-    const license = licenses.find(l => l.id === id);
-    if(license) openModal(license);
-}
-
-// --- DELETE CONFIRMATION MODAL LOGIC ---
-function openDeleteConfirmModal(id, message, onConfirmCallback) {
-    licenseIdToDelete = id; 
-    deleteConfirmMessage.textContent = message;
-    currentConfirmCallback = onConfirmCallback; 
-    deleteConfirmModal.classList.remove('hidden');
-    deleteConfirmModal.classList.add('flex');
-    setTimeout(() => {
-        deleteConfirmModalContent.classList.remove('scale-95', 'opacity-0');
-    }, 10);
-}
-
-function closeDeleteConfirmModal() {
-    deleteConfirmModalContent.classList.add('scale-95', 'opacity-0');
-    setTimeout(() => {
-        deleteConfirmModal.classList.add('hidden');
-        deleteConfirmModal.classList.remove('flex');
-        licenseIdToDelete = null; 
-        currentConfirmCallback = null; 
-    }, 200);
-}
-
-cancelDeleteButton.addEventListener('click', closeDeleteConfirmModal);
-deleteConfirmModal.addEventListener('click', (e) => {
-    if (e.target === deleteConfirmModal) closeDeleteConfirmModal();
-});
-
-confirmDeleteButton.addEventListener('click', async () => {
-    if (currentConfirmCallback) {
-        await currentConfirmCallback();
-    }
-});
-
-function handleDelete(e) {
-    const id = e.currentTarget.dataset.id;
-    const licenseSoftware = licenses.find(l => l.id === id)?.software || 'lisensi ini';
-    openDeleteConfirmModal(id, `Apakah Anda yakin ingin menghapus lisensi ${licenseSoftware}?`, async () => {
-        try {
-            const licenseRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses', id);
-            await deleteDoc(licenseRef);
-            showToast('Lisensi berhasil dihapus.');
-            closeDeleteConfirmModal();
-        } catch (error) {
-            console.error("Error deleting license: ", error);
-            showToast(`Gagal menghapus: ${error.message}`, true);
-        }
-    });
-}
-
-// --- TAB SWITCHING ---
-const tabs = document.getElementById('tabs');
-const mobileTabs = document.getElementById('mobile-tabs');
-const tabContents = document.querySelectorAll('.tab-content');
-
-function handleTabClick(e) {
-    const button = e.target.closest('.tab-button');
-    if (!button) return;
-
-    const allTabButtons = document.querySelectorAll('.tab-button');
-    allTabButtons.forEach(btn => {
-        btn.classList.remove('tab-active');
-    });
-
-    button.classList.add('tab-active'); 
-    
-    const tabId = button.dataset.tab;
-    tabContents.forEach(content => {
-        if (content.id === tabId) {
-            content.classList.remove('hidden');
-        } else {
-            content.classList.add('hidden');
-        }
-    });
-    
-    if (window.innerWidth < 768) {
-        closeSidebar();
-    }
-}
-
-tabs.addEventListener('click', handleTabClick);
-mobileTabs.addEventListener('click', handleTabClick);
-
-// --- CHART LOGIC ---
-function initCharts() {
-    const commonOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { 
-                position: 'bottom',
-                labels: { color: '#94a3b8', padding: 15, font: { size: 12 } }
-            }
-        },
-        onHover: (event, chartElement) => {
-            event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
-        },
-        elements: { arc: { hoverOffset: 12, borderWidth: 0 } }
-    };
-    const barOptions = { 
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        onHover: (event, chartElement) => {
-            event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
-        },
-        scales: {
-            y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-            x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
-        }
-    };
-    
-    const pieDoughnutOptions = {
-        ...commonOptions,
-        plugins: {
-            ...commonOptions.plugins,
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        const label = context.label || '';
-                        const value = context.parsed;
-                        const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
-                        const percentage = (total > 0) ? ((value / total) * 100).toFixed(1) + '%' : '0%';
-                        return `${label}: ${value} (${percentage})`;
-                    }
-                }
-            }
-        }
-    };
-
-    typeChart = new Chart(document.getElementById('type-chart'), { type: 'doughnut', data: {}, options: pieDoughnutOptions });
-    statusChart = new Chart(document.getElementById('status-chart'), { type: 'pie', data: {}, options: pieDoughnutOptions });
-    costChart = new Chart(document.getElementById('cost-chart'), { type: 'bar', data: {}, options: barOptions });
-}
-
-function updateCharts() {
-    if (!typeChart) initCharts();
-
-    const totalCost = licenses.reduce((sum, license) => sum + (license.cost || 0), 0);
-    let mostExpensiveLicense = "Belum ada lisensi";
-    if (licenses.length > 0) {
-        const mostExpensive = licenses.reduce((max, current) => (current.cost > (max.cost || 0) ? current : max), licenses[0]);
-        mostExpensiveLicense = `${mostExpensive.software} (${formatCost(mostExpensive.cost || 0)})`;
-    }
-    // Fixed: Now displays the correct total cost
-    totalCostElement.textContent = formatCost(totalCost);
-    mostExpensiveLicenseElement.textContent = mostExpensiveLicense;
-
-    const typeData = licenses.reduce((acc, license) => { acc[license.type] = (acc[license.type] || 0) + 1; return acc; }, {});
-    typeChart.data = {
-        labels: Object.keys(typeData),
-        datasets: [{ data: Object.values(typeData), backgroundColor: ['#0ea5e9', '#d946ef', '#64748b', '#14b8a6', '#f59e0b'] }] // Updated color combination
-    };
-    typeChart.update();
-
-    const statusData = licenses.reduce((acc, license) => { acc[license.status] = (acc[license.status] || 0) + 1; return acc; }, {});
-    statusChart.data = {
-        labels: Object.keys(statusData),
-        datasets: [{ data: Object.values(statusData), backgroundColor: ['#22c55e', '#ef4444', '#f59e0b', '#3b82f6'] }] // Updated color combination for better visual contrast
-    };
-    statusChart.update();
-    
-    const costData = licenses.reduce((acc, license) => { acc[license.type] = (acc[license.type] || 0) + (license.cost || 0); return acc; }, {});
-    const costLabels = Object.keys(costData);
-    const costValues = Object.values(costData);
-    costChart.data = {
-        labels: costLabels,
-        datasets: [{ 
-            label: 'Total Biaya', 
-            data: costValues, 
-            backgroundColor: ['#0ea5e9', '#d946ef', '#64748b', '#14b8a6', '#f59e0b'], // Updated color combination
-            borderRadius: 6, borderWidth: 2, borderColor: 'transparent'
-        }]
-    };
-    costChart.update();
-}
-
-// --- FILTERING AND PAGINATION LOGIC ---
-const filterSoftware = document.getElementById('filter-software');
-const filterType = document.getElementById('filter-type');
-const filterKey = document.getElementById('filter-key');
-const filterStatus = document.getElementById('filter-status');
-
-[filterSoftware, filterType, filterKey, filterStatus].forEach(el => {
-    el.addEventListener('input', () => {
-        currentPage = 1;
-        applyFiltersAndSort();
-    });
-});
-
-function updateSortIcons() {
-    document.querySelectorAll('.sort-icon').forEach(icon => icon.textContent = '');
-    if (sortState.column) {
-        const currentHeader = document.querySelector(`th[data-sort="${sortState.column}"] .sort-icon`);
-        if (currentHeader) {
-            currentHeader.textContent = sortState.direction === 'asc' ? '▲' : '▼';
-        }
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const sortableHeaders = document.querySelectorAll('.sortable');
-    sortableHeaders.forEach(header => {
-        header.addEventListener('click', (e) => {
-            const column = e.currentTarget.dataset.sort;
-            if (sortState.column === column) {
-                sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                sortState.column = column;
-                sortState.direction = 'asc';
-            }
-            currentPage = 1;
-            applyFiltersAndSort();
-        });
-    });
-    updateSortIcons();
-});
-
-function applyFiltersAndSort() {
-    const software = filterSoftware.value.toLowerCase();
-    const type = filterType.value;
-    const key = filterKey.value.toLowerCase();
-    const status = filterStatus.value;
-
-    filteredLicenses = licenses.filter(license => {
-        return (software === '' || (license.software || '').toLowerCase().includes(software)) &&
-               (type === '' || license.type === type) &&
-               (key === '' || (license.key || '').toLowerCase().includes(key)) &&
-               (status === '' || license.status === status);
-    });
-    
-    if (sortState.column) {
-        filteredLicenses.sort((a, b) => {
-            let aValue = a[sortState.column];
-            let bValue = b[sortState.column];
-            
-            if (aValue === undefined || aValue === null) aValue = '';
-            if (bValue === undefined || bValue === null) bValue = '';
-            
-            if (typeof aValue === 'string' && typeof bValue === 'string') {
-                return sortState.direction === 'asc' ? aValue.localeCompare(bValue, undefined, { sensitivity: 'base' }) : bValue.localeCompare(aValue, undefined, { sensitivity: 'base' });
-            } else if (sortState.column === 'expirationDate') {
-                const aDate = a.expirationDate ? a.expirationDate.seconds : null;
-                const bDate = b.expirationDate ? b.expirationDate.seconds : null;
-                return sortState.direction === 'asc' ? (aDate - bDate) : (bDate - aDate);
-            }
-            else {
-                return sortState.direction === 'asc' ? aValue - bValue : bValue - aValue;
+            if(data.software) {
+                const ref = id ? doc(colRef, id) : doc(colRef);
+                id ? batch.update(ref, data) : batch.set(ref, data);
+                count++;
             }
         });
-    }
 
-    displayPage();
-}
-
-function displayPage() {
-    const startIndex = (currentPage - 1) * licensesPerPage;
-    const endIndex = startIndex + licensesPerPage;
-    const paginatedLicenses = filteredLicenses.slice(startIndex, endIndex);
-    
-    renderLicenses(paginatedLicenses);
-    setupPagination();
-    updateBulkActionUI();
-    document.getElementById('select-all-checkbox').checked = false;
-}
-
-function setupPagination() {
-    paginationContainer.innerHTML = '';
-    const totalPages = Math.ceil(filteredLicenses.length / licensesPerPage);
-    if (totalPages <= 1) return;
-
-    const prevButton = document.createElement('button');
-    prevButton.innerHTML = '&laquo;';
-    prevButton.className = 'px-3 py-1 rounded-md bg-gray-700 hover:bg-gray-600 pagination-button text-gray-400';
-    prevButton.disabled = currentPage === 1;
-    prevButton.addEventListener('click', () => { if (currentPage > 1) { currentPage--; displayPage(); } });
-    paginationContainer.appendChild(prevButton);
-
-    const maxPageButtons = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
-    let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
-    if (endPage - startPage + 1 < maxPageButtons) {
-        startPage = Math.max(1, endPage - maxPageButtons + 1);
-    }
-
-    if (startPage > 1) {
-        const firstButton = document.createElement('button');
-        firstButton.textContent = '1';
-        firstButton.className = 'px-3 py-1 rounded-md bg-gray-700 hover:bg-gray-600 pagination-button text-gray-400';
-        firstButton.addEventListener('click', () => { currentPage = 1; displayPage(); });
-        paginationContainer.appendChild(firstButton);
-        if (startPage > 2) paginationContainer.insertAdjacentHTML('beforeend', `<span class="px-2 py-1 text-gray-400">...</span>`);
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-        const pageButton = document.createElement('button');
-        pageButton.textContent = i;
-        pageButton.className = 'px-3 py-1 rounded-md bg-gray-700 hover:bg-gray-600 pagination-button text-gray-400';
-        if (i === currentPage) pageButton.classList.add('active');
-        pageButton.addEventListener('click', () => { currentPage = i; displayPage(); });
-        paginationContainer.appendChild(pageButton);
-    }
-
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) paginationContainer.insertAdjacentHTML('beforeend', `<span class="px-2 py-1 text-gray-400">...</span>`);
-        const lastButton = document.createElement('button');
-        lastButton.textContent = totalPages;
-        lastButton.className = 'px-3 py-1 rounded-md bg-gray-700 hover:bg-gray-600 pagination-button text-gray-400';
-        lastButton.addEventListener('click', () => { currentPage = totalPages; displayPage(); });
-        paginationContainer.appendChild(lastButton);
-    }
-
-    const nextButton = document.createElement('button');
-    nextButton.innerHTML = '&raquo;';
-    nextButton.className = 'px-3 py-1 rounded-md bg-gray-700 hover:bg-gray-600 pagination-button text-gray-400';
-    nextButton.disabled = currentPage === totalPages;
-    nextButton.addEventListener('click', () => { if (currentPage < totalPages) { currentPage++; displayPage(); } });
-    paginationContainer.appendChild(nextButton);
-}
-
-// --- BULK ACTIONS LOGIC ---
-const selectAllCheckbox = document.getElementById('select-all-checkbox');
-const bulkDeleteButton = document.getElementById('bulk-delete-button');
-const bulkEditButton = document.getElementById('bulk-edit-button');
-const selectionInfo = document.getElementById('selection-info');
-
-selectAllCheckbox.addEventListener('change', (e) => {
-    document.querySelectorAll('.license-checkbox').forEach(cb => { cb.checked = e.target.checked; });
-    updateBulkActionUI();
-});
-
-function updateBulkActionUI() {
-    const selectedIds = getSelectedLicenseIds();
-    const hasSelection = selectedIds.length > 0;
-    
-    bulkDeleteButton.disabled = !hasSelection;
-    bulkEditButton.disabled = !hasSelection;
-    
-    if (hasSelection) {
-        selectionInfo.innerHTML = `<b>${selectedIds.length} lisensi terpilih.</b> Aksi hanya berlaku untuk item yang terlihat di halaman ini.`;
-    } else {
-        selectionInfo.textContent = `Pilih lisensi dari 'Daftar Lisensi' untuk melakukan aksi masal.`;
-    }
-}
-
-function getSelectedLicenseIds() {
-    return Array.from(document.querySelectorAll('.license-checkbox:checked')).map(cb => cb.dataset.id);
-}
-
-bulkDeleteButton.addEventListener('click', async () => {
-    const idsToDelete = getSelectedLicenseIds();
-    if (idsToDelete.length === 0) return;
-    
-    openDeleteConfirmModal(null, `Apakah Anda yakin ingin menghapus ${idsToDelete.length} lisensi terpilih?`, async () => {
-        try {
-            const batch = writeBatch(db);
-            idsToDelete.forEach(id => {
-                const licenseRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses', id);
-                batch.delete(licenseRef);
-            });
+        if(count > 0) {
             await batch.commit();
-            showToast(`${idsToDelete.length} lisensi berhasil dihapus.`);
-            selectAllCheckbox.checked = false;
-            closeDeleteConfirmModal();
-        } catch (error) {
-            console.error("Error bulk deleting: ", error);
-            showToast(`Gagal menghapus lisensi: ${error.message}`, true);
+            showToast('Sukses', 'Data berhasil disimpan');
+            hideAllModals();
         }
+    } catch (err) {
+        showToast('Error', err.message, true);
+    }
+});
+
+// --- DELETION ---
+let deleteCallback = null;
+function confirmDelete(id) {
+    showModal('delete-confirm-modal');
+    deleteCallback = async () => {
+        try {
+            await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses', id));
+            showToast('Dihapus', 'Item telah dihapus permanen');
+            hideAllModals();
+        } catch (e) { showToast('Error', e.message, true); }
+    };
+}
+
+document.getElementById('confirm-delete-button').addEventListener('click', () => {
+    if(deleteCallback) deleteCallback();
+});
+
+// --- BULK ACTIONS ---
+document.getElementById('select-all-checkbox').addEventListener('change', e => {
+    document.querySelectorAll('.license-checkbox').forEach(c => c.checked = e.target.checked);
+    updateBulkUI();
+});
+
+function updateBulkUI() {
+    const selected = document.querySelectorAll('.license-checkbox:checked');
+    const count = selected.length;
+    document.getElementById('bulk-edit-button').disabled = count === 0;
+    document.getElementById('bulk-delete-button').disabled = count === 0;
+    document.getElementById('selection-info').innerText = count > 0 
+        ? `${count} item dipilih.` 
+        : "Pilih item dari 'Daftar Lisensi'.";
+}
+
+document.getElementById('bulk-delete-button').addEventListener('click', () => {
+    const ids = Array.from(document.querySelectorAll('.license-checkbox:checked')).map(c => c.dataset.id);
+    showModal('delete-confirm-modal');
+    deleteCallback = async () => {
+        const batch = writeBatch(db);
+        ids.forEach(id => batch.delete(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses', id)));
+        await batch.commit();
+        showToast('Sukses', `${ids.length} item dihapus.`);
+        hideAllModals();
+        document.getElementById('select-all-checkbox').checked = false;
+    }
+});
+
+document.getElementById('bulk-edit-button').addEventListener('click', () => {
+    const count = document.querySelectorAll('.license-checkbox:checked').length;
+    document.getElementById('bulk-edit-info').innerText = `Mengedit ${count} item.`;
+    showModal('bulk-edit-modal');
+});
+
+document.getElementById('bulk-edit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ids = Array.from(document.querySelectorAll('.license-checkbox:checked')).map(c => c.dataset.id);
+    const batch = writeBatch(db);
+    
+    const type = document.getElementById('bulk-type').value;
+    const status = document.getElementById('bulk-status').value;
+    const updateType = document.getElementById('bulk-update-type-check').checked;
+    const updateStatus = document.getElementById('bulk-update-status-check').checked;
+
+    ids.forEach(id => {
+        const ref = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses', id);
+        const data = { lastUpdated: new Date() };
+        if(updateType) data.type = type;
+        if(updateStatus) data.status = status;
+        batch.update(ref, data);
+    });
+
+    await batch.commit();
+    showToast('Sukses', 'Update masal berhasil.');
+    hideAllModals();
+});
+
+// --- FILTERS & PAGINATION ---
+function applyFilters() {
+    const search = document.getElementById('filter-software').value.toLowerCase();
+    const type = document.getElementById('filter-type').value;
+    const status = document.getElementById('filter-status').value;
+
+    filteredLicenses = licenses.filter(l => {
+        return (l.software.toLowerCase().includes(search) || (l.key && l.key.toLowerCase().includes(search))) &&
+               (type === '' || l.type === type) &&
+               (status === '' || l.status === status);
+    });
+
+    // Sorting
+    const { column, direction } = sortState;
+    filteredLicenses.sort((a, b) => {
+        let va = a[column], vb = b[column];
+        if(column === 'expirationDate') {
+            va = va ? va.seconds : 0;
+            vb = vb ? vb.seconds : 0;
+        }
+        if (typeof va === 'string') return direction === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+        return direction === 'asc' ? va - vb : vb - va;
+    });
+
+    renderList();
+}
+
+['filter-software', 'filter-type', 'filter-status'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => { currentPage = 1; applyFilters(); });
+});
+
+document.querySelectorAll('.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+        const col = th.dataset.sort;
+        if(sortState.column === col) sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+        else { sortState.column = col; sortState.direction = 'asc'; }
+        
+        document.querySelectorAll('.sort-icon').forEach(i => i.innerText = '');
+        th.querySelector('.sort-icon').innerText = sortState.direction === 'asc' ? '↑' : '↓';
+        applyFilters();
     });
 });
 
-// --- BULK EDIT MODAL LOGIC ---
-function openBulkEditModal() {
-    const selectedIds = getSelectedLicenseIds();
-    if (selectedIds.length === 0) return;
+function renderPagination() {
+    ui.pagination.innerHTML = '';
+    const pages = Math.ceil(filteredLicenses.length / licensesPerPage);
+    if(pages <= 1) return;
 
-    bulkEditInfo.textContent = `Anda akan mengedit ${selectedIds.length} lisensi. Centang properti yang ingin Anda ubah.`;
-    bulkEditForm.reset(); 
+    for(let i=1; i<=pages; i++) {
+        const btn = document.createElement('button');
+        btn.innerText = i;
+        btn.className = `w-8 h-8 rounded-lg text-sm font-medium transition-colors ${i===currentPage ? 'bg-indigo-500 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`;
+        btn.addEventListener('click', () => { currentPage = i; renderList(); });
+        ui.pagination.appendChild(btn);
+    }
+}
+
+// --- CHARTS ---
+let chartInstances = {};
+function updateCharts() {
+    const ctxType = document.getElementById('type-chart');
+    const ctxStatus = document.getElementById('status-chart');
+    const ctxCost = document.getElementById('cost-chart');
     
-    bulkEditModal.classList.remove('hidden');
-    bulkEditModal.classList.add('flex');
-    setTimeout(() => {
-        bulkEditModalContent.classList.remove('scale-95', 'opacity-0');
-    }, 10);
-}
+    if(!ctxType || !ctxStatus || !ctxCost) return;
 
-function closeBulkEditModal() {
-    bulkEditModalContent.classList.add('scale-95', 'opacity-0');
-    setTimeout(() => {
-        bulkEditModal.classList.add('hidden');
-        bulkEditModal.classList.remove('flex');
-    }, 200);
-}
+    // Theme Colors (Neon Palette)
+    const colors = ['#6366f1', '#ec4899', '#06b6d4', '#8b5cf6', '#10b981'];
+    
+    // Data Prep
+    const typeCounts = {};
+    const statusCounts = {};
+    const costByType = {};
 
-bulkEditButton.addEventListener('click', openBulkEditModal);
-bulkEditCancelButton.addEventListener('click', closeBulkEditModal);
-bulkEditModal.addEventListener('click', (e) => {
-    if (e.target === bulkEditModal) closeBulkEditModal();
-});
+    licenses.forEach(l => {
+        typeCounts[l.type] = (typeCounts[l.type] || 0) + 1;
+        statusCounts[l.status] = (statusCounts[l.status] || 0) + 1;
+        costByType[l.type] = (costByType[l.type] || 0) + (l.cost || 0);
+    });
 
-bulkEditForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const idsToUpdate = getSelectedLicenseIds();
-    if (idsToUpdate.length === 0) return;
+    const config = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8', font: {family: 'Plus Jakarta Sans'} } } }
+    };
 
-    const updateData = {};
-    if (document.getElementById('bulk-update-type-check').checked) {
-        updateData.type = document.getElementById('bulk-type').value;
-    }
-    if (document.getElementById('bulk-update-status-check').checked) {
-        updateData.status = document.getElementById('bulk-status').value;
-    }
-    updateData.lastUpdated = new Date();
+    // Destroy old charts
+    if(chartInstances.type) chartInstances.type.destroy();
+    if(chartInstances.status) chartInstances.status.destroy();
+    if(chartInstances.cost) chartInstances.cost.destroy();
 
-    if (Object.keys(updateData).length <= 1) { // Check if only lastUpdated is present
-        showToast("Tidak ada perubahan yang dipilih. Centang properti yang ingin diubah.", true);
-        return;
-    }
+    chartInstances.type = new Chart(ctxType, {
+        type: 'doughnut',
+        data: { labels: Object.keys(typeCounts), datasets: [{ data: Object.values(typeCounts), backgroundColor: colors, borderWidth: 0 }] },
+        options: config
+    });
 
-    try {
-        const batch = writeBatch(db);
-        idsToUpdate.forEach(id => {
-            const licenseRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses', id);
-            batch.update(licenseRef, updateData);
-        });
-        await batch.commit();
-        showToast(`${idsToUpdate.length} lisensi berhasil diperbarui.`);
-        selectAllCheckbox.checked = false;
-        closeBulkEditModal(); 
-    } catch (error) {
-        console.error("Error bulk updating: ", error);
-        showToast(`Gagal memperbarui lisensi: ${error.message}`, true);
-    }
-});
+    chartInstances.status = new Chart(ctxStatus, {
+        type: 'pie',
+        data: { labels: Object.keys(statusCounts), datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#10b981', '#f43f5e', '#f59e0b', '#64748b'], borderWidth: 0 }] },
+        options: config
+    });
 
-// --- DATA MANAGEMENT ---
-const downloadJsonButton = document.getElementById('download-json-button');
-const uploadJsonButton = document.getElementById('upload-json-button');
-const jsonFileInput = document.getElementById('json-file-input');
-
-downloadJsonButton.addEventListener('click', () => {
-    if (licenses.length === 0) {
-        showToast("Tidak ada data untuk diunduh.", true);
-        return;
-    }
-    const dataStr = JSON.stringify(licenses.map(({id, lastUpdated, ...rest}) => {
-        // Convert Firestore Timestamp to ISO string for better JSON representation
-        if (rest.expirationDate && rest.expirationDate.toDate) {
-            rest.expirationDate = rest.expirationDate.toDate().toISOString().split('T')[0];
+    chartInstances.cost = new Chart(ctxCost, {
+        type: 'bar',
+        data: { 
+            labels: Object.keys(costByType), 
+            datasets: [{ 
+                label: 'Total Biaya', 
+                data: Object.values(costByType), 
+                backgroundColor: '#6366f1', 
+                borderRadius: 8 
+            }] 
+        },
+        options: {
+            ...config,
+            scales: {
+                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+            }
         }
+    });
+    
+    // Cost Text
+    const total = Object.values(costByType).reduce((a,b)=>a+b,0);
+    document.getElementById('total-cost').innerText = formatCost(total);
+    
+    if(licenses.length) {
+        const max = licenses.reduce((p, c) => (p.cost > c.cost) ? p : c);
+        document.getElementById('most-expensive-license').innerText = `${max.software} (${formatCost(max.cost)})`;
+    }
+}
+
+// --- UTILS ---
+function showToast(title, msg, isError=false) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-title').innerText = title;
+    document.getElementById('toast-message').innerText = msg;
+    document.getElementById('toast-icon').className = isError ? 'ph-fill ph-warning-circle text-rose-400 text-xl' : 'ph-fill ph-check-circle text-emerald-400 text-xl';
+    t.className = `fixed top-6 right-6 z-[60] flex items-center gap-3 px-4 py-3 rounded-xl glass-panel border-l-4 transform transition-all duration-300 shadow-2xl translate-x-0 ${isError ? 'border-rose-500' : 'border-emerald-500'}`;
+    
+    setTimeout(() => t.classList.add('translate-x-full'), 3000);
+}
+
+// Tab Logic
+document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active', 'text-white', 'bg-white/5'));
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.add('text-slate-300'));
+        btn.classList.add('active', 'text-white');
+        btn.classList.remove('text-slate-300');
+
+        const target = btn.dataset.tab;
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById(target).classList.remove('hidden');
+        
+        // Close mobile sidebar if open
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+        document.getElementById('mobile-menu-backdrop').classList.add('hidden');
+    });
+});
+
+document.getElementById('open-sidebar-button').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('-translate-x-full');
+    document.getElementById('mobile-menu-backdrop').classList.remove('hidden');
+});
+document.getElementById('close-sidebar-button').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.add('-translate-x-full');
+    document.getElementById('mobile-menu-backdrop').classList.add('hidden');
+});
+
+// JSON Export/Import
+document.getElementById('download-json-button').addEventListener('click', () => {
+        const dataStr = JSON.stringify(licenses.map(({id, lastUpdated, expirationDate, ...rest}) => {
+        if (expirationDate && expirationDate.toDate) rest.expirationDate = expirationDate.toDate().toISOString().split('T')[0];
         return rest;
     }), null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', 'data_lisensi.json');
-    linkElement.click();
-    showToast("Data sedang diunduh...");
+    const a = document.createElement('a');
+    a.href = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    a.download = 'nexus_backup.json';
+    a.click();
 });
 
-uploadJsonButton.addEventListener('click', () => jsonFileInput.click());
-
-jsonFileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
+document.getElementById('upload-json-button').addEventListener('click', () => document.getElementById('json-file-input').click());
+document.getElementById('json-file-input').addEventListener('change', e => {
     const reader = new FileReader();
-    reader.onload = async (event) => {
+    reader.onload = async (ev) => {
         try {
-            const importedLicenses = JSON.parse(event.target.result);
-            if (!Array.isArray(importedLicenses)) {
-                throw new Error("File JSON harus berisi sebuah array.");
-            }
-            
-            openDeleteConfirmModal(null, `Anda akan mengimpor ${importedLicenses.length} lisensi. Lanjutkan?`, async () => {
-                try {
-                    const batch = writeBatch(db);
-                    const licensesCollection = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses');
-                    importedLicenses.forEach(license => {
-                        if (license.software && license.type && license.status) {
-                             if (license.expirationDate) {
-                                license.expirationDate = new Date(license.expirationDate);
-                            }
-                            license.lastUpdated = new Date();
-                            const newLicenseRef = doc(licensesCollection);
-                            batch.set(newLicenseRef, license);
-                        }
-                    });
-                    await batch.commit();
-                    showToast(`${importedLicenses.length} lisensi berhasil diimpor.`);
-                    closeDeleteConfirmModal();
-                } catch (error) {
-                    console.error("Error importing JSON: ", error);
-                    showToast(`Gagal mengimpor: ${error.message}`, true);
-                } finally {
-                    jsonFileInput.value = '';
-                }
+            const data = JSON.parse(ev.target.result);
+            const batch = writeBatch(db);
+            const col = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses');
+            data.forEach(item => {
+                if(item.expirationDate) item.expirationDate = new Date(item.expirationDate);
+                item.lastUpdated = new Date();
+                batch.set(doc(col), item);
             });
-        } catch (error) {
-            console.error("Error parsing JSON: ", error);
-            showToast(`Gagal mengimpor: ${error.message}`, true);
-        } finally {
-            jsonFileInput.value = '';
-        }
+            await batch.commit();
+            showToast('Import', `${data.length} item berhasil diimpor.`);
+        } catch(err) { showToast('Error', 'Format file salah', true); }
     };
-    reader.readAsText(file);
+    reader.readAsText(e.target.files[0]);
 });

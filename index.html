@@ -1,397 +1,547 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dasbor Manajemen Lisensi</title>
+    <title>Nexus License Manager</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        glass: {
+                            100: 'rgba(255, 255, 255, 0.05)',
+                            200: 'rgba(255, 255, 255, 0.1)',
+                            300: 'rgba(255, 255, 255, 0.15)',
+                        },
+                        brand: {
+                            primary: '#6366f1', // Indigo
+                            secondary: '#ec4899', // Pink
+                            accent: '#06b6d4', // Cyan
+                        }
+                    },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 
-    <!-- Chart.js for Statistics -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Google Fonts: Inter -->
+    <!-- Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Ikon (Phosphor Icons) -->
+    <!-- Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(to right, #1a2a3a, #111b27);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617; /* Slate 950 */
             color: #e2e8f0;
-            min-height: 100vh;
+            overflow-x: hidden;
         }
-        .tab-button {
-            transition: all 0.2s ease-in-out;
-            border-radius: 9999px;
-            padding: 8px 16px;
+
+        /* Latar Belakang Aurora Dinamis */
+        .aurora-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background: #020617;
+            overflow: hidden;
         }
-        .tab-button.tab-active {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #ffc72c;
-            font-weight: 600;
+        .aurora-blob {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: blob 10s infinite alternate;
         }
-        .modal-backdrop {
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
+        .blob-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #4f46e5; }
+        .blob-2 { bottom: -10%; right: -10%; width: 600px; height: 600px; background: #db2777; animation-delay: 2s; }
+        .blob-3 { top: 40%; left: 40%; width: 400px; height: 400px; background: #0891b2; animation-delay: 4s; }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
+        
+        .glass-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
         }
-        ::-webkit-scrollbar-track {
-            background: #1f2937;
+        .glass-input:focus {
+            background: rgba(0, 0, 0, 0.5);
+            border-color: #6366f1;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
-        ::-webkit-scrollbar-thumb {
-            background: #4b5563;
-            border-radius: 10px;
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+        /* Interactive Elements */
+        .nav-item {
+            position: relative;
+            transition: all 0.3s ease;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280;
+        .nav-item.active {
+            color: white;
+            background: linear-gradient(90deg, rgba(99,102,241,0.2) 0%, rgba(236,72,153,0.1) 100%);
+            border-left: 3px solid #6366f1;
         }
-        .pagination-button {
-            min-width: 40px;
-            transition: all 0.2s ease-in-out;
+        .nav-item:hover:not(.active) {
+            background: rgba(255,255,255,0.03);
+            color: #e2e8f0;
         }
-        .pagination-button.active {
-            background-color: #ffc72c;
-            color: #1a2a3a;
-            font-weight: bold;
+
+        .btn-gradient {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .btn-disabled {
-            background-color: #3f4553;
-            color: #9ca3af;
-            cursor: not-allowed;
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5);
         }
-        .sortable {
+        .btn-gradient::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(255,255,255,0.2), transparent);
+            opacity: 0;
+            transition: 0.3s;
+        }
+        .btn-gradient:hover::after { opacity: 1; }
+
+        /* Floating Table Rows */
+        .floating-row {
+            transition: transform 0.2s, background 0.2s;
+        }
+        .floating-row:hover {
+            transform: scale-[1.01];
+            background: rgba(255,255,255,0.03);
+            z-index: 10;
+        }
+
+        /* Checkbox Custom */
+        input[type="checkbox"] {
+            accent-color: #6366f1;
             cursor: pointer;
-            user-select: none;
         }
-        .sortable .sort-icon {
-            display: inline-block;
-            margin-left: 0.5rem;
-            width: 1em;
-        }
-        /* Card effect for mobile */
-        @media (max-width: 639px) {
-            .card-grid {
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
-            }
-        }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in-out forwards;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+
+        .fade-enter { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="antialiased">
+<body class="antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Background Animation -->
+    <div class="aurora-bg">
+        <div class="aurora-blob blob-1"></div>
+        <div class="aurora-blob blob-2"></div>
+        <div class="aurora-blob blob-3"></div>
+    </div>
 
     <!-- Login Screen -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
-        <div class="w-full max-w-md bg-[#1a2a3a] rounded-2xl shadow-2xl p-8 text-center border border-gray-700">
-            <h1 class="text-3xl font-bold text-white mb-2">Dasbor Lisensi</h1>
-            <p class="text-gray-400 mb-8">Kelola dan lacak semua lisensi perangkat lunak Anda.</p>
-            <button id="login-button" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-3 px-4 rounded-lg flex items-center justify-center transition duration-300 transform hover:scale-105 shadow-lg">
-                <svg class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C42.021,35.591,44,30.138,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
-                Masuk dengan Google
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative z-10">
+        <div class="glass-panel w-full max-w-md rounded-3xl p-10 text-center border-t border-l border-white/10 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+            
+            <div class="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30 animate-float">
+                <i class="ph ph-key text-3xl text-white"></i>
+            </div>
+            
+            <h1 class="text-4xl font-bold text-white mb-3 tracking-tight">Nexus</h1>
+            <p class="text-slate-400 mb-10 font-light">Platform Manajemen Lisensi Terpadu</p>
+            
+            <button id="login-button" class="group w-full bg-white text-slate-900 hover:bg-slate-50 font-bold py-3.5 px-6 rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-white/20 transform hover:-translate-y-1">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6 mr-3" alt="Google">
+                <span class="text-base">Lanjutkan dengan Google</span>
+                <i class="ph ph-arrow-right ml-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></i>
             </button>
+            
+            <p class="mt-8 text-xs text-slate-500">Dilindungi oleh Enkripsi End-to-End</p>
         </div>
     </div>
 
     <!-- Main App Screen -->
-    <div id="app-screen" class="hidden flex flex-col h-screen">
-        <!-- Navbar - Sticky on Top -->
-        <header id="navbar" class="sticky top-4 z-40 p-2 mx-auto max-w-7xl">
-            <div class="bg-gray-900/50 backdrop-blur-lg rounded-full shadow-2xl border border-gray-700 flex items-center justify-between p-2 md:px-6 md:py-3">
-                <div class="flex items-center">
-                    <button id="open-sidebar-button" class="md:hidden text-white hover:text-yellow-300 mr-4 p-2">
-                        <i class="ph ph-list text-2xl"></i>
-                    </button>
-                    <!-- Menghapus teks "Dasbor Lisensi" dan menggantinya dengan ikon -->
-                    <i class="ph ph-key text-2xl text-yellow-500 mr-2"></i>
-                    <h1 class="text-2xl font-bold text-white"> </h1>
+    <div id="app-screen" class="hidden flex h-screen overflow-hidden relative z-10">
+        
+        <!-- Sidebar (Desktop) -->
+        <aside class="hidden md:flex w-72 flex-col glass-panel border-r border-white/5 m-4 rounded-2xl h-[calc(100vh-2rem)] shadow-2xl">
+            <div class="p-6 flex items-center gap-3 border-b border-white/5">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-pink-500 flex items-center justify-center">
+                    <i class="ph-bold ph-command text-white"></i>
                 </div>
-                <nav id="tabs" class="hidden md:flex flex-grow justify-center space-x-2 nav-links-container">
-                    <button data-tab="tab-list" class="tab-button tab-active">Daftar Lisensi</button>
-                    <button data-tab="tab-stats" class="tab-button">Statistik</button>
-                    <button data-tab="tab-bulk" class="tab-button">Aksi Masal</button>
-                    <button data-tab="tab-manage" class="tab-button">Manajemen Data</button>
-                </nav>
-                <div id="user-profile" class="flex items-center space-x-3">
-                    <img id="user-photo" src="https://placehold.co/40x40/e2e8f0/e2e8f0" alt="User Photo" class="w-10 h-10 rounded-full border-2 border-yellow-400">
-                    <div class="hidden md:block">
-                        <p id="user-name" class="font-semibold text-sm text-white">Guest User</p>
-                        <button id="logout-button-text" class="text-xs text-yellow-300 hover:text-yellow-200">Keluar</button>
-                    </div>
-                </div>
+                <h1 class="text-xl font-bold text-white tracking-wide">Nexus<span class="text-indigo-400">App</span></h1>
             </div>
-        </header>
 
-        <!-- Main Content Area -->
-        <div class="flex flex-grow md:gap-6 md:p-8 pt-4 md:pt-0">
-            <!-- Sidebar (for mobile only) -->
-            <aside id="sidebar" class="fixed inset-y-0 left-0 bg-gray-900 w-60 p-6 flex flex-col z-50 transform -translate-x-full transition-transform duration-300 md:hidden rounded-2xl md:w-64 border border-gray-700 shadow-2xl">
-                <div class="flex-grow flex flex-col">
-                    <div class="flex items-center justify-between mb-8">
-                        <h1 class="text-2xl font-bold text-white">Menu</h1>
-                        <button id="close-sidebar-button" class="md:hidden text-gray-300 hover:text-white">
-                            <i class="ph ph-x text-2xl"></i>
-                        </button>
+            <nav id="tabs" class="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+                <button data-tab="tab-list" class="nav-item active w-full flex items-center px-4 py-3 rounded-xl text-left text-sm font-medium">
+                    <i class="ph ph-squares-four text-xl mr-3"></i>
+                    Daftar Lisensi
+                </button>
+                <button data-tab="tab-stats" class="nav-item w-full flex items-center px-4 py-3 rounded-xl text-left text-sm font-medium">
+                    <i class="ph ph-chart-pie-slice text-xl mr-3"></i>
+                    Analitik & Statistik
+                </button>
+                <button data-tab="tab-bulk" class="nav-item w-full flex items-center px-4 py-3 rounded-xl text-left text-sm font-medium">
+                    <i class="ph ph-stack text-xl mr-3"></i>
+                    Operasi Masal
+                </button>
+                <button data-tab="tab-manage" class="nav-item w-full flex items-center px-4 py-3 rounded-xl text-left text-sm font-medium">
+                    <i class="ph ph-database text-xl mr-3"></i>
+                    Data & Backup
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-white/5 bg-black/20">
+                <div class="flex items-center gap-3 mb-3" id="user-profile">
+                    <img id="user-photo" src="" alt="User" class="w-10 h-10 rounded-full ring-2 ring-indigo-500/50">
+                    <div class="overflow-hidden">
+                        <p id="user-name" class="text-sm font-semibold text-white truncate">User</p>
+                        <p class="text-xs text-slate-400">Pro Plan</p>
                     </div>
-                    <nav id="mobile-tabs" class="flex flex-col space-y-2">
-                        <button data-tab="tab-list" class="tab-button tab-active flex items-center py-2 px-4 rounded-lg transition duration-200 hover:bg-gray-700">
-                            <i class="ph ph-list-dashes mr-3"></i>
-                            Daftar Lisensi
-                        </button>
-                        <button data-tab="tab-stats" class="tab-button flex items-center py-2 px-4 rounded-lg transition duration-200 hover:bg-gray-700">
-                            <i class="ph ph-chart-line mr-3"></i>
-                            Statistik
-                        </button>
-                        <button data-tab="tab-bulk" class="tab-button flex items-center py-2 px-4 rounded-lg transition duration-200 hover:bg-gray-700">
-                             <i class="ph ph-stack mr-3"></i>
-                            Aksi Masal
-                        </button>
-                        <button data-tab="tab-manage" class="tab-button flex items-center py-2 px-4 rounded-lg transition duration-200 hover:bg-gray-700">
-                            <i class="ph ph-database mr-3"></i>
-                            Manajemen Data
-                        </button>
-                    </nav>
                 </div>
-            </aside>
-            <!-- Mobile Menu Backdrop -->
-            <div id="mobile-menu-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
-            
-            <!-- Main Content -->
-            <main class="flex-1 p-4 md:p-0 overflow-y-auto">
-                <!-- Tab: Daftar Lisensi -->
-                <div id="tab-list" class="tab-content fade-in">
-                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
-                        <h2 class="text-2xl sm:text-3xl font-bold text-white">Daftar Lisensi</h2>
-                        <button id="add-license-button" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-2 px-4 rounded-lg flex items-center justify-center transition duration-300 transform hover:scale-105 shadow-md">
-                            <i class="ph ph-plus mr-2"></i>
-                            Tambah Lisensi
-                        </button>
+                <button id="logout-button-text" class="w-full py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="ph ph-sign-out mr-2"></i> Keluar
+                </button>
+            </div>
+        </aside>
+
+        <!-- Mobile Header -->
+        <div class="md:hidden fixed top-0 left-0 right-0 z-40 glass-panel border-b border-white/5 px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="ph-fill ph-command text-indigo-500 text-xl"></i>
+                <span class="font-bold text-lg">Nexus</span>
+            </div>
+            <button id="open-sidebar-button" class="text-white p-2 rounded-lg hover:bg-white/10">
+                <i class="ph ph-list text-2xl"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div id="mobile-menu-backdrop" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden md:hidden transition-opacity duration-300"></div>
+        <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-[#0f172a] z-50 transform -translate-x-full transition-transform duration-300 md:hidden shadow-2xl border-r border-white/10 flex flex-col">
+            <div class="p-6 flex justify-between items-center border-b border-white/10">
+                <h2 class="text-xl font-bold">Menu</h2>
+                <button id="close-sidebar-button" class="text-slate-400 hover:text-white"><i class="ph ph-x text-2xl"></i></button>
+            </div>
+            <nav id="mobile-tabs" class="p-4 space-y-2 flex-1">
+                <button data-tab="tab-list" class="nav-item w-full flex items-center px-4 py-3 rounded-xl text-left text-sm font-medium text-slate-300 hover:bg-white/5 active">
+                    <i class="ph ph-squares-four text-xl mr-3"></i> Lisensi
+                </button>
+                <button data-tab="tab-stats" class="nav-item w-full flex items-center px-4 py-3 rounded-xl text-left text-sm font-medium text-slate-300 hover:bg-white/5">
+                    <i class="ph ph-chart-pie-slice text-xl mr-3"></i> Statistik
+                </button>
+                <button data-tab="tab-bulk" class="nav-item w-full flex items-center px-4 py-3 rounded-xl text-left text-sm font-medium text-slate-300 hover:bg-white/5">
+                    <i class="ph ph-stack text-xl mr-3"></i> Aksi Masal
+                </button>
+                <button data-tab="tab-manage" class="nav-item w-full flex items-center px-4 py-3 rounded-xl text-left text-sm font-medium text-slate-300 hover:bg-white/5">
+                    <i class="ph ph-database text-xl mr-3"></i> Data
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden pt-16 md:pt-0">
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+                
+                <!-- Header Area -->
+                <header class="flex justify-between items-end mb-8 fade-enter">
+                    <div>
+                        <h2 id="page-title" class="text-3xl font-bold text-white mb-1">Daftar Lisensi</h2>
+                        <p class="text-slate-400 text-sm">Kelola aset digital Anda dengan efisien.</p>
                     </div>
-                    <!-- Filter Section -->
-                    <div class="bg-gray-900/50 p-4 md:p-6 rounded-xl shadow-lg border border-gray-700 backdrop-blur-md mb-4">
-                        <h3 class="font-bold text-xl mb-4 text-white">Filter Lisensi</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <input id="filter-software" type="text" placeholder="Filter berdasarkan software..." class="bg-gray-800 border border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-white placeholder-gray-400">
-                            <select id="filter-type" class="bg-gray-800 border border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-white">
+                    <button id="add-license-button" class="hidden sm:flex btn-gradient text-white font-medium py-2.5 px-5 rounded-xl items-center shadow-lg shadow-indigo-500/20">
+                        <i class="ph-bold ph-plus mr-2"></i> Tambah Baru
+                    </button>
+                    <!-- Mobile Add Button (Floating) -->
+                    <button id="add-license-mobile" class="sm:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full btn-gradient flex items-center justify-center shadow-xl shadow-indigo-500/30">
+                        <i class="ph-bold ph-plus text-2xl text-white"></i>
+                    </button>
+                </header>
+
+                <!-- Tab: Daftar Lisensi -->
+                <div id="tab-list" class="tab-content fade-enter space-y-6">
+                    <!-- Search & Filter Bar -->
+                    <div class="glass-panel rounded-2xl p-4 flex flex-col md:flex-row gap-4">
+                        <div class="relative flex-grow">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input id="filter-software" type="text" placeholder="Cari software, key..." class="w-full pl-10 glass-input rounded-xl py-2.5 px-4 text-sm">
+                        </div>
+                        <div class="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+                            <select id="filter-type" class="glass-input rounded-xl py-2.5 px-4 text-sm min-w-[140px] appearance-none cursor-pointer">
                                 <option value="">Semua Tipe</option>
                                 <option>Perpetual</option><option>Subscription</option><option>Trial</option><option>Giveaway</option><option>Lifetime</option>
                             </select>
-                            <input id="filter-key" type="text" placeholder="Filter berdasarkan kunci..." class="bg-gray-800 border border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-white placeholder-gray-400">
-                            <select id="filter-status" class="bg-gray-800 border border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-white">
+                            <select id="filter-status" class="glass-input rounded-xl py-2.5 px-4 text-sm min-w-[140px] appearance-none cursor-pointer">
                                 <option value="">Semua Status</option>
                                 <option>Active</option><option>Expired</option><option>Revoked</option><option>Belum dipakai</option>
                             </select>
                         </div>
-                     </div>
-                    <!-- License Table (Desktop) -->
-                    <div class="hidden sm:block bg-gray-900/50 rounded-xl shadow-lg overflow-x-auto border border-gray-700 backdrop-blur-md">
-                        <table id="license-table" class="w-full text-left">
-                            <thead class="bg-gray-800">
-                                <tr>
-                                    <th class="p-4 w-12"><input type="checkbox" id="select-all-checkbox" class="rounded bg-gray-700 border-gray-500 text-yellow-500 focus:ring-yellow-400"></th>
-                                    <th id="software-header" class="p-4 font-semibold text-white sortable" data-sort="software">Nama Software <span class="sort-icon"></span></th>
-                                    <th id="type-header" class="p-4 font-semibold text-white sortable" data-sort="type">Tipe <span class="sort-icon"></span></th>
-                                    <th id="key-header" class="p-4 font-semibold text-white sortable" data-sort="key">Kunci Lisensi <span class="sort-icon"></span></th>
-                                    <th id="cost-header" class="p-4 font-semibold text-white sortable" data-sort="cost">Biaya <span class="sort-icon"></span></th>
-                                    <th id="expiration-header" class="p-4 font-semibold text-white sortable" data-sort="expirationDate">Expired <span class="sort-icon"></span></th>
-                                    <th id="status-header" class="p-4 font-semibold text-white sortable" data-sort="status">Status <span class="sort-icon"></span></th>
-                                    <th class="p-4 font-semibold text-white">Aksi</th>
+                    </div>
+
+                    <!-- Stats Mini Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="glass-panel p-4 rounded-2xl relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 text-6xl text-white/5"><i class="ph-fill ph-check-circle"></i></div>
+                            <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Aktif</p>
+                            <h3 id="count-active" class="text-2xl font-bold text-emerald-400 mt-1">-</h3>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 text-6xl text-white/5"><i class="ph-fill ph-warning-circle"></i></div>
+                            <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Expired</p>
+                            <h3 id="count-expired" class="text-2xl font-bold text-rose-400 mt-1">-</h3>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl relative overflow-hidden md:col-span-2">
+                            <div class="absolute -right-4 -top-4 text-6xl text-white/5"><i class="ph-fill ph-money"></i></div>
+                            <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Investasi</p>
+                            <h3 id="total-cost-mini" class="text-2xl font-bold text-indigo-400 mt-1">-</h3>
+                        </div>
+                    </div>
+
+                    <!-- Table Container -->
+                    <div class="glass-panel rounded-2xl overflow-hidden hidden md:block">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-slate-400 text-xs uppercase tracking-wider border-b border-white/5 bg-white/5">
+                                    <th class="p-5 w-12"><input type="checkbox" id="select-all-checkbox" class="rounded bg-slate-700 border-slate-500"></th>
+                                    <th class="p-5 font-semibold cursor-pointer hover:text-white transition-colors sortable" data-sort="software">Software <span class="sort-icon ml-1"></span></th>
+                                    <th class="p-5 font-semibold cursor-pointer hover:text-white transition-colors sortable" data-sort="type">Tipe <span class="sort-icon ml-1"></span></th>
+                                    <th class="p-5 font-semibold">Key</th>
+                                    <th class="p-5 font-semibold cursor-pointer hover:text-white transition-colors sortable" data-sort="cost">Biaya <span class="sort-icon ml-1"></span></th>
+                                    <th class="p-5 font-semibold cursor-pointer hover:text-white transition-colors sortable" data-sort="expirationDate">Valid Hingga <span class="sort-icon ml-1"></span></th>
+                                    <th class="p-5 font-semibold text-center">Status</th>
+                                    <th class="p-5 text-right">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="license-list-body">
-                                <tr><td colspan="8" class="text-center p-8 text-gray-400">Memuat data lisensi...</td></tr>
+                            <tbody id="license-list-body" class="divide-y divide-white/5 text-sm text-slate-300">
+                                <!-- Rows injected here -->
                             </tbody>
                         </table>
                     </div>
-                    <!-- License List (Mobile) -->
-                    <div id="license-list-cards" class="sm:hidden card-grid">
-                        <div id="license-list-cards-empty" class="text-center p-8 text-gray-400">
-                            Memuat data lisensi...
-                        </div>
+
+                    <!-- Mobile Cards List -->
+                    <div id="license-list-cards" class="md:hidden space-y-4">
+                        <!-- Cards injected here -->
                     </div>
-                     <!-- Pagination -->
-                    <div id="pagination-container" class="flex justify-center items-center mt-6 space-x-1 sm:space-x-2"></div>
+
+                    <!-- Pagination -->
+                    <div id="pagination-container" class="flex justify-center items-center gap-2 pt-4"></div>
                 </div>
 
                 <!-- Tab: Statistik -->
-                <div id="tab-stats" class="tab-content hidden fade-in">
-                     <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-white">Statistik</h2>
-                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                         <div class="bg-gray-900/50 p-6 rounded-xl shadow-lg border border-gray-700 backdrop-blur-md">
-                            <h3 class="text-xl font-bold text-white mb-2">Total Biaya Lisensi</h3>
-                            <p id="total-cost" class="text-3xl font-bold text-yellow-300">Memuat...</p>
-                         </div>
-                         <div class="bg-gray-900/50 p-6 rounded-xl shadow-lg border border-gray-700 backdrop-blur-md">
-                             <h3 class="text-xl font-bold text-white mb-2">Lisensi Termahal</h3>
-                             <p id="most-expensive-license" class="text-2xl font-bold text-yellow-300">Memuat...</p>
-                         </div>
-                     </div>
-                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div class="bg-gray-900/50 p-6 rounded-xl shadow-lg border border-gray-700 backdrop-blur-md">
-                            <h3 class="font-bold text-xl text-center mb-4 text-white">Lisensi per Tipe</h3>
-                            <div class="relative h-64 w-full mx-auto" style="max-width: 280px;">
+                <div id="tab-stats" class="tab-content hidden fade-enter space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-panel p-6 rounded-2xl border-l-4 border-indigo-500">
+                            <h3 class="text-lg font-bold text-white mb-1">Total Investasi</h3>
+                            <p id="total-cost" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Memuat...</p>
+                        </div>
+                        <div class="glass-panel p-6 rounded-2xl border-l-4 border-pink-500">
+                            <h3 class="text-lg font-bold text-white mb-1">Aset Termahal</h3>
+                            <p id="most-expensive-license" class="text-xl font-medium text-white">Memuat...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass-panel p-6 rounded-2xl flex flex-col items-center">
+                            <h3 class="text-base font-semibold text-slate-300 mb-6">Distribusi Tipe Lisensi</h3>
+                            <div class="w-64 h-64 relative">
                                 <canvas id="type-chart"></canvas>
                             </div>
                         </div>
-                        <div class="bg-gray-900/50 p-6 rounded-xl shadow-lg border border-gray-700 backdrop-blur-md">
-                            <h3 class="font-bold text-xl text-center mb-4 text-white">Lisensi per Status</h3>
-                            <div class="relative h-64 w-full mx-auto" style="max-width: 280px;">
+                        <div class="glass-panel p-6 rounded-2xl flex flex-col items-center">
+                            <h3 class="text-base font-semibold text-slate-300 mb-6">Status Keaktifan</h3>
+                            <div class="w-64 h-64 relative">
                                 <canvas id="status-chart"></canvas>
                             </div>
                         </div>
-                        <div class="bg-gray-900/50 p-6 rounded-xl shadow-lg col-span-1 lg:col-span-2 border border-gray-700 backdrop-blur-md">
-                             <h3 class="font-bold mb-4 text-xl text-center text-white">Total Biaya per Tipe</h3>
-                            <div class="relative h-64 w-full mx-auto" style="max-width: 800px;">
+                        <div class="glass-panel p-6 rounded-2xl lg:col-span-2">
+                            <h3 class="text-base font-semibold text-slate-300 mb-6 text-center">Analisis Biaya per Kategori</h3>
+                            <div class="w-full h-72">
                                 <canvas id="cost-chart"></canvas>
                             </div>
                         </div>
-                     </div>
+                    </div>
                 </div>
 
                 <!-- Tab: Aksi Masal -->
-                <div id="tab-bulk" class="tab-content hidden fade-in">
-                     <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-white">Aksi Masal</h2>
-                     <div class="bg-gray-900/50 p-6 rounded-xl shadow-lg border border-gray-700 backdrop-blur-md">
-                        <h3 class="font-bold text-xl mb-4 text-white">Tindakan untuk Lisensi Terpilih</h3>
-                        <p id="selection-info" class="text-gray-400 mb-4">Pilih lisensi dari 'Daftar Lisensi' untuk melakukan aksi masal. Centang di header tabel hanya memilih item di halaman saat ini.</p>
-                        <div class="flex flex-wrap gap-4">
-                            <button id="bulk-edit-button" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center transition duration-300 disabled:btn-disabled transform hover:scale-105 shadow-md" disabled>
-                                <i class="ph ph-note-pencil mr-2"></i>
-                                Edit Lisensi Terpilih
+                <div id="tab-bulk" class="tab-content hidden fade-enter">
+                    <div class="glass-panel p-8 rounded-3xl text-center max-w-2xl mx-auto mt-10">
+                        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-500/10 mb-6">
+                            <i class="ph-duotone ph-stack text-4xl text-indigo-400"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white mb-2">Manajemen Masal</h2>
+                        <p id="selection-info" class="text-slate-400 mb-8">Pilih item dari menu 'Daftar Lisensi' untuk mengaktifkan fitur ini.</p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button id="bulk-edit-button" disabled class="glass-panel hover:bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:text-white py-4 px-6 rounded-xl flex flex-col items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="ph-bold ph-pencil-simple text-2xl"></i>
+                                <span class="font-semibold">Edit Terpilih</span>
                             </button>
-                            <button id="bulk-delete-button" class="w-full sm:w-auto bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center transition duration-300 disabled:btn-disabled transform hover:scale-105 shadow-md" disabled>
-                                <i class="ph ph-trash mr-2"></i>
-                                Hapus Lisensi Terpilih
+                            <button id="bulk-delete-button" disabled class="glass-panel hover:bg-rose-600/20 border border-rose-500/30 text-rose-300 hover:text-white py-4 px-6 rounded-xl flex flex-col items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="ph-bold ph-trash text-2xl"></i>
+                                <span class="font-semibold">Hapus Terpilih</span>
                             </button>
                         </div>
-                     </div>
+                    </div>
                 </div>
 
                 <!-- Tab: Manajemen Data -->
-                <div id="tab-manage" class="tab-content hidden fade-in">
-                    <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-white">Manajemen Data</h2>
-                    <div class="bg-gray-900/50 p-6 rounded-xl shadow-lg border border-gray-700 backdrop-blur-md">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <h3 class="font-bold text-xl mb-2 text-white">Ekspor Data</h3>
-                                <p class="text-gray-400 mb-4">Unduh semua koleksi lisensi Anda sebagai file JSON.</p>
-                                <button id="download-json-button" class="bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded-lg flex items-center transition duration-300 transform hover:scale-105 shadow-md">
-                                    <i class="ph ph-download-simple mr-2"></i>
-                                    Unduh JSON
-                                </button>
+                <div id="tab-manage" class="tab-content hidden fade-enter">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <div class="glass-panel p-6 rounded-2xl relative group hover:border-emerald-500/50 transition-all">
+                            <div class="absolute top-4 right-4 p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                                <i class="ph-bold ph-download-simple text-xl"></i>
                             </div>
-                            <div>
-                                <h3 class="font-bold text-xl mb-2 text-white">Impor Data</h3>
-                                <p class="text-gray-400 mb-4">Muat koleksi lisensi dari file JSON. Lisensi yang ada akan ditambahkan, bukan diganti.</p>
-                                <button id="upload-json-button" class="bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 rounded-lg flex items-center transition duration-300 transform hover:scale-105 shadow-md">
-                                    <i class="ph ph-upload-simple mr-2"></i>
-                                    Muat JSON
-                                </button>
-                                <input type="file" id="json-file-input" class="hidden" accept=".json">
+                            <h3 class="text-xl font-bold text-white mb-2">Backup Data</h3>
+                            <p class="text-slate-400 text-sm mb-6 pr-8">Unduh seluruh database lisensi Anda ke dalam format JSON yang aman.</p>
+                            <button id="download-json-button" class="w-full py-2.5 rounded-xl border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500 hover:text-white font-medium transition-all">
+                                Ekspor JSON
+                            </button>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl relative group hover:border-blue-500/50 transition-all">
+                            <div class="absolute top-4 right-4 p-2 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                                <i class="ph-bold ph-upload-simple text-xl"></i>
                             </div>
+                            <h3 class="text-xl font-bold text-white mb-2">Restore Data</h3>
+                            <p class="text-slate-400 text-sm mb-6 pr-8">Pulihkan lisensi dari file backup. Data akan ditambahkan ke database.</p>
+                            <button id="upload-json-button" class="w-full py-2.5 rounded-xl border border-blue-500/50 text-blue-400 hover:bg-blue-500 hover:text-white font-medium transition-all">
+                                Impor JSON
+                            </button>
+                            <input type="file" id="json-file-input" class="hidden" accept=".json">
                         </div>
                     </div>
                 </div>
-            </main>
-        </div>
+
+            </div>
+        </main>
     </div>
 
-    <!-- Add/Edit License Modal -->
-    <div id="license-modal" class="fixed inset-0 z-50 items-center justify-center hidden modal-backdrop">
-        <div class="bg-gray-900 w-full max-w-2xl rounded-2xl shadow-2xl p-6 md:p-8 transform transition-all scale-95 opacity-0 border border-gray-700" id="modal-content">
-            <h3 id="modal-title" class="text-2xl font-bold mb-6 text-white">Tambah Lisensi Baru</h3>
-            <form id="license-form">
-                <div class="max-h-[70vh] overflow-y-auto pr-2">
+    <!-- Modals (Modern Glass Style) -->
+    <div id="modal-backdrop" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+        
+        <!-- Main Form Modal -->
+        <div id="license-modal" class="hidden w-full max-w-2xl mx-4">
+            <div class="glass-panel bg-[#0f172a] border border-white/10 rounded-3xl shadow-2xl transform scale-95 transition-all duration-300" id="modal-content">
+                <div class="p-6 border-b border-white/5 flex justify-between items-center">
+                    <h3 id="modal-title" class="text-xl font-bold text-white">Konfigurasi Lisensi</h3>
+                    <button id="cancel-button-x" class="text-slate-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+                </div>
+                <form id="license-form" class="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
                     <input type="hidden" id="license-id">
-                    <div id="license-rows-container" class="space-y-4">
-                        <!-- License entry rows will be injected here -->
+                    <div id="license-rows-container" class="space-y-6">
+                        <!-- Dynamic Rows -->
                     </div>
+                    
+                    <button type="button" id="add-row-button" class="mt-4 w-full py-3 border border-dashed border-slate-600 rounded-xl text-slate-400 hover:text-white hover:border-indigo-500 hover:bg-indigo-500/5 transition-all flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-plus"></i> Tambah Item Lain
+                    </button>
+                </form>
+                <div class="p-6 border-t border-white/5 flex justify-end gap-3 bg-black/20 rounded-b-3xl">
+                    <button type="button" id="cancel-button" class="px-5 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-colors">Batal</button>
+                    <button type="submit" id="save-form-button" form="license-form" class="px-6 py-2.5 rounded-xl btn-gradient text-white font-medium shadow-lg shadow-indigo-500/20">Simpan Perubahan</button>
                 </div>
-                <div class="flex flex-col sm:flex-row justify-between items-center mt-6 pt-4 border-t border-gray-700 gap-4">
-                    <button type="button" id="add-row-button" class="w-full sm:w-auto bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded-lg transition transform hover:scale-105 shadow-md"><i class="ph ph-plus mr-2"></i>Tambah Baris</button>
-                    <div class="w-full sm:w-auto flex justify-end space-x-4">
-                        <button type="button" id="cancel-button" class="flex-1 sm:flex-none bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4 rounded-lg transition transform hover:scale-105 shadow-md">Batal</button>
-                        <button type="submit" id="save-form-button" class="flex-1 sm:flex-none bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-2 px-4 rounded-lg transition transform hover:scale-105 shadow-md">Simpan</button>
-                    </div>
-                </div>
-            </form>
+            </div>
         </div>
-    </div>
 
-    <!-- Bulk Edit Modal -->
-    <div id="bulk-edit-modal" class="fixed inset-0 z-50 items-center justify-center hidden modal-backdrop">
-        <div class="bg-gray-900 w-full max-w-lg rounded-2xl shadow-2xl p-6 md:p-8 transform transition-all scale-95 opacity-0 border border-gray-700" id="bulk-edit-modal-content">
-            <h3 id="bulk-edit-modal-title" class="text-2xl font-bold mb-6 text-white">Edit Lisensi Secara Masal</h3>
-            <form id="bulk-edit-form">
-                <p id="bulk-edit-info" class="text-gray-400 mb-4"></p>
-                <div class="space-y-4">
-                    <!-- Tipe -->
-                    <div class="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-                        <input type="checkbox" id="bulk-update-type-check" class="h-5 w-5 rounded bg-gray-700 border-gray-500 text-yellow-500 focus:ring-yellow-400">
-                        <div class="flex-grow">
-                            <label for="bulk-type" class="block text-gray-400 text-sm font-bold mb-1">Tipe Lisensi</label>
-                            <select id="bulk-type" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-white">
-                                <option>Perpetual</option>
-                                <option>Subscription</option>
-                                <option>Trial</option>
-                                <option>Giveaway</option>
-                                <option>Lifetime</option>
-                            </select>
+        <!-- Bulk Edit Modal -->
+        <div id="bulk-edit-modal" class="hidden w-full max-w-md mx-4">
+            <div class="glass-panel bg-[#0f172a] rounded-3xl p-6 shadow-2xl transform scale-95 transition-all">
+                <h3 class="text-xl font-bold text-white mb-4">Edit Masal</h3>
+                <p id="bulk-edit-info" class="text-sm text-slate-400 mb-6"></p>
+                <form id="bulk-edit-form" class="space-y-4">
+                    <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                        <div class="flex items-center gap-3 mb-2">
+                            <input type="checkbox" id="bulk-update-type-check">
+                            <label for="bulk-type" class="text-sm font-medium text-slate-300">Ubah Tipe</label>
                         </div>
+                        <select id="bulk-type" class="w-full glass-input rounded-lg p-2 text-sm">
+                            <option>Perpetual</option><option>Subscription</option><option>Trial</option><option>Giveaway</option><option>Lifetime</option>
+                        </select>
                     </div>
-                    <!-- Status -->
-                    <div class="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-                        <input type="checkbox" id="bulk-update-status-check" class="h-5 w-5 rounded bg-gray-700 border-gray-500 text-yellow-500 focus:ring-yellow-400">
-                        <div class="flex-grow">
-                            <label for="bulk-status" class="block text-gray-400 text-sm font-bold mb-1">Status Lisensi</label>
-                            <select id="bulk-status" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-white">
-                                <option>Active</option>
-                                <option>Expired</option>
-                                <option>Revoked</option>
-                                <option>Belum dipakai</option>
-                            </select>
+                    <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                        <div class="flex items-center gap-3 mb-2">
+                            <input type="checkbox" id="bulk-update-status-check">
+                            <label for="bulk-status" class="text-sm font-medium text-slate-300">Ubah Status</label>
                         </div>
+                        <select id="bulk-status" class="w-full glass-input rounded-lg p-2 text-sm">
+                            <option>Active</option><option>Expired</option><option>Revoked</option><option>Belum dipakai</option>
+                        </select>
                     </div>
-                </div>
-                <div class="flex justify-end space-x-4 mt-6 pt-4 border-t border-gray-700">
-                    <button type="button" id="bulk-edit-cancel-button" class="bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4 rounded-lg transition transform hover:scale-105 shadow-md">Batal</button>
-                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-2 px-4 rounded-lg transition transform hover:scale-105 shadow-md">Simpan Perubahan</button>
-                </div>
-            </form>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" id="bulk-edit-cancel-button" class="px-4 py-2 rounded-lg text-slate-400 hover:text-white">Batal</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500">Terapkan</button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div id="delete-confirm-modal" class="fixed inset-0 z-50 items-center justify-center hidden modal-backdrop">
-        <div class="bg-gray-900 w-full max-w-sm rounded-2xl shadow-2xl p-6 md:p-8 transform transition-all scale-95 opacity-0 border border-gray-700" id="delete-confirm-modal-content">
-            <h3 class="text-2xl font-bold mb-4 text-white">Konfirmasi Penghapusan</h3>
-            <p id="delete-confirm-message" class="text-gray-400 mb-6">Apakah Anda yakin ingin menghapus lisensi ini?</p>
-            <div class="flex justify-end space-x-4">
-                <button type="button" id="cancel-delete-button" class="bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4 rounded-lg transition transform hover:scale-105 shadow-md">Batal</button>
-                <button type="button" id="confirm-delete-button" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-2 px-4 rounded-lg transition transform hover:scale-105 shadow-md">Hapus</button>
+        <!-- Delete Confirm -->
+        <div id="delete-confirm-modal" class="hidden w-full max-w-sm mx-4">
+            <div class="glass-panel bg-[#0f172a] rounded-3xl p-6 text-center transform scale-95 transition-all border border-rose-500/30">
+                <div class="w-14 h-14 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto mb-4">
+                    <i class="ph-fill ph-trash text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Hapus Lisensi?</h3>
+                <p id="delete-confirm-message" class="text-sm text-slate-400 mb-6">Tindakan ini tidak dapat dibatalkan.</p>
+                <div class="flex gap-3 justify-center">
+                    <button type="button" id="cancel-delete-button" class="px-4 py-2 rounded-lg text-slate-400 hover:bg-white/5">Batal</button>
+                    <button type="button" id="confirm-delete-button" class="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-500 shadow-lg shadow-rose-600/20">Ya, Hapus</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Custom Alert/Toast -->
-    <div id="toast" class="fixed bottom-5 right-1/2 translate-x-1/2 w-11/12 max-w-sm text-white py-2 px-4 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
-        <p id="toast-message">Operasi berhasil!</p>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-6 right-6 z-[60] flex items-center gap-3 px-4 py-3 rounded-xl glass-panel border-l-4 transform translate-x-full transition-transform duration-300 shadow-2xl">
+        <i id="toast-icon" class="ph-fill ph-check-circle text-xl"></i>
+        <div>
+            <h4 id="toast-title" class="font-bold text-sm text-white">Sukses</h4>
+            <p id="toast-message" class="text-xs text-slate-300">Operasi berhasil dilakukan</p>
+        </div>
     </div>
-	<script type="module" src="/script.js"></script>
+
+    <script type="module" src="script.js"></script>
 </body>
 </html>
