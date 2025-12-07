@@ -600,7 +600,7 @@ document.getElementById('download-json-button').addEventListener('click', () => 
     }), null, 2);
     const a = document.createElement('a');
     a.href = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    a.download = 'nexus_backup.json';
+    a.download = 'backup.json';
     a.click();
 });
 
