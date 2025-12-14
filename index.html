@@ -112,11 +112,12 @@
             box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
         }
 
-        /* Navbar Specific Styles */
+        /* --- Navbar Logic Updated --- */
         #main-navbar {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
+        /* Mobile Default Scrolled State */
         #main-navbar.scrolled {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(16px);
@@ -127,6 +128,37 @@
             padding-bottom: 0.75rem;
         }
         
+        /* Desktop "Floating Pill" Logic */
+        @media (min-width: 768px) {
+            #main-navbar.scrolled {
+                background: transparent;
+                border-bottom: none;
+                box-shadow: none;
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+                pointer-events: none; /* Allows clicking through the empty areas */
+            }
+
+            /* Hide Logo & Profile when scrolled on Desktop */
+            #main-navbar.scrolled .nav-side-element {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.9);
+                pointer-events: none;
+            }
+
+            /* Transform the Center Menu into the Pill */
+            #main-navbar.scrolled #desktop-nav {
+                pointer-events: auto; /* Re-enable clicks on the menu */
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 1);
+                box-shadow: 0 10px 30px -5px rgba(15, 118, 110, 0.15), 0 4px 10px -5px rgba(0,0,0,0.05);
+                transform: translateY(5px) scale(1.02);
+                padding-left: 2rem;
+                padding-right: 2rem;
+            }
+        }
+
         #main-navbar.top-state {
             background: transparent;
             border-bottom: 1px solid transparent;
@@ -135,9 +167,19 @@
             padding-bottom: 1.5rem;
         }
 
+        /* Transition for elements */
+        .nav-side-element {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center;
+        }
+        
+        #desktop-nav {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         .nav-link {
             position: relative;
-            font-weight: 500;
+            font-weight: 600;
             color: #64748b;
             transition: color 0.3s ease;
         }
@@ -146,16 +188,17 @@
             position: absolute;
             width: 0;
             height: 2px;
-            bottom: -4px;
+            bottom: -6px;
             left: 50%;
             background-color: #0d9488;
             transition: all 0.3s ease;
             transform: translateX(-50%);
+            border-radius: 2px;
         }
         .nav-link:hover { color: #0f766e; }
-        .nav-link:hover::after { width: 100%; }
+        .nav-link:hover::after { width: 80%; }
         
-        .nav-link.active { color: #0f766e; font-weight: 700; }
+        .nav-link.active { color: #0f766e; }
         .nav-link.active::after { width: 100%; }
 
         /* Scrollbar */
@@ -215,41 +258,43 @@
     <!-- Main App Screen -->
     <div id="app-screen" class="hidden h-screen flex flex-col relative z-10">
         
-        <!-- NEW NAVBAR (Pengganti Sidebar) -->
+        <!-- NEW NAVBAR (Floating Pill Logic Applied) -->
         <nav id="main-navbar" class="fixed top-0 left-0 right-0 z-50 top-state px-6 lg:px-12 flex justify-between items-center">
-            <!-- Brand -->
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-teal-500 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
-                    <i class="ph-bold ph-command"></i>
+            
+            <!-- Brand (Left) - Added 'nav-side-element' -->
+            <div class="nav-side-element flex items-center gap-2">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
+                    <i class="ph-bold ph-command text-lg"></i>
                 </div>
                 <h1 class="text-xl font-bold text-slate-800 tracking-wide">RichD<span class="text-teal-600">App</span></h1>
             </div>
 
-            <!-- Desktop Menu (Center) -->
-            <div class="hidden md:flex items-center gap-8 bg-white/40 px-6 py-2 rounded-full border border-white/50 backdrop-blur-sm shadow-sm" id="desktop-nav">
-                <button data-tab="tab-list" class="nav-item nav-link active text-sm cursor-pointer flex items-center gap-2">
-                    <i class="ph-bold ph-squares-four"></i> Lisensi
+            <!-- Desktop Menu (Center) - Remains visible but transforms -->
+            <!-- Matches the image: Rounded pill, simple text/icons -->
+            <div class="hidden md:flex items-center gap-8 bg-white/50 px-8 py-3 rounded-full border border-white/60 backdrop-blur-md shadow-sm transition-all" id="desktop-nav">
+                <button data-tab="tab-list" class="nav-item nav-link active text-sm cursor-pointer flex items-center gap-2.5">
+                    <i class="ph-bold ph-squares-four text-lg"></i> Lisensi
                 </button>
-                <button data-tab="tab-stats" class="nav-item nav-link text-sm cursor-pointer flex items-center gap-2">
-                    <i class="ph-bold ph-chart-pie-slice"></i> Statistik
+                <button data-tab="tab-stats" class="nav-item nav-link text-sm cursor-pointer flex items-center gap-2.5">
+                    <i class="ph-bold ph-chart-pie-slice text-lg"></i> Statistik
                 </button>
-                <button data-tab="tab-bulk" class="nav-item nav-link text-sm cursor-pointer flex items-center gap-2">
-                    <i class="ph-bold ph-stack"></i> Aksi Masal
+                <button data-tab="tab-bulk" class="nav-item nav-link text-sm cursor-pointer flex items-center gap-2.5">
+                    <i class="ph-bold ph-stack text-lg"></i> Aksi Masal
                 </button>
-                <button data-tab="tab-manage" class="nav-item nav-link text-sm cursor-pointer flex items-center gap-2">
-                    <i class="ph-bold ph-database"></i> Data
+                <button data-tab="tab-manage" class="nav-item nav-link text-sm cursor-pointer flex items-center gap-2.5">
+                    <i class="ph-bold ph-database text-lg"></i> Data
                 </button>
             </div>
 
-            <!-- User Profile & Mobile Toggle (Right) -->
-            <div class="flex items-center gap-4">
-                <!-- User Profile (Click to logout logic can be added or dropdown) -->
+            <!-- User Profile & Mobile Toggle (Right) - Added 'nav-side-element' -->
+            <div class="nav-side-element flex items-center gap-4">
+                <!-- User Profile -->
                 <div class="hidden sm:flex items-center gap-3 pl-4 border-l border-slate-300/50">
                     <div class="text-right hidden lg:block">
                         <p id="user-name" class="text-sm font-bold text-slate-700 leading-none">User</p>
                         <button id="logout-button-text" class="text-xs text-rose-500 hover:text-rose-700 font-medium mt-1">Keluar</button>
                     </div>
-                    <img id="user-photo" src="" alt="User" class="w-9 h-9 rounded-full ring-2 ring-white shadow-md">
+                    <img id="user-photo" src="" alt="User" class="w-10 h-10 rounded-full ring-2 ring-white shadow-md object-cover">
                 </div>
 
                 <!-- Mobile Menu Button -->
@@ -259,7 +304,7 @@
             </div>
         </nav>
 
-        <!-- Mobile Menu Overlay (Tetap dipertahankan untuk responsive) -->
+        <!-- Mobile Menu Overlay -->
         <div id="mobile-menu-backdrop" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[60] hidden transition-opacity duration-300"></div>
         <aside id="sidebar" class="fixed inset-y-0 right-0 w-72 bg-white/95 backdrop-blur-xl z-[70] transform translate-x-full transition-transform duration-300 md:hidden shadow-2xl border-l border-slate-100 flex flex-col">
             <div class="p-6 flex justify-between items-center border-b border-slate-100">
@@ -267,7 +312,6 @@
                 <button id="close-sidebar-button" class="text-slate-400 hover:text-rose-500"><i class="ph-bold ph-x text-xl"></i></button>
             </div>
             <nav id="mobile-tabs" class="p-4 space-y-2 flex-1">
-                <!-- Mobile Buttons will be hooked by JS same as desktop -->
                 <button data-tab="tab-list" class="nav-item w-full flex items-center px-4 py-3 rounded-xl text-left text-sm font-medium hover:bg-slate-50 transition-colors active text-teal-700 bg-teal-50/50">
                     <i class="ph-bold ph-squares-four text-lg mr-3"></i> Daftar Lisensi
                 </button>
@@ -289,12 +333,12 @@
         </aside>
 
         <!-- Main Content Area -->
-        <!-- Added pt-24 to compensate for fixed navbar -->
-        <main id="main-scroll-container" class="flex-1 overflow-y-auto scroll-smooth pt-24 pb-8 px-4 md:px-8 lg:px-16">
+        <!-- Added pt-28 to compensate for navbar -->
+        <main id="main-scroll-container" class="flex-1 overflow-y-auto scroll-smooth pt-28 pb-8 px-4 md:px-8 lg:px-16">
             
             <div class="max-w-7xl mx-auto min-h-[calc(100vh-8rem)]">
                 
-                <!-- Header Content (Page Title & Add Button) -->
+                <!-- Header Content -->
                 <header class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 fade-enter gap-4">
                     <div>
                         <h2 id="page-title" class="text-3xl md:text-4xl font-bold text-slate-800 mb-2">Daftar Lisensi</h2>
@@ -471,7 +515,7 @@
         <i class="ph-bold ph-plus text-2xl"></i>
     </button>
 
-    <!-- Modals (Tetap sama, hanya styling sedikit diperhalus) -->
+    <!-- Modals -->
     <div id="modal-backdrop" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
         <!-- License Modal -->
         <div id="license-modal" class="hidden w-full max-w-2xl mx-4">
