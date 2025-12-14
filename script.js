@@ -36,6 +36,7 @@ const ui = {
     userPhoto: document.getElementById('user-photo'),
     userName: document.getElementById('user-name'),
     logoutBtn: document.getElementById('logout-button-text'),
+    mobileLogoutBtn: document.getElementById('mobile-logout-btn'), // Added mobile logout
     listBody: document.getElementById('license-list-body'),
     listCards: document.getElementById('license-list-cards'),
     pagination: document.getElementById('pagination-container'),
@@ -45,8 +46,23 @@ const ui = {
     addBtnMobile: document.getElementById('add-license-mobile'),
     statsActive: document.getElementById('count-active'),
     statsExpired: document.getElementById('count-expired'),
-    statsCostMini: document.getElementById('total-cost-mini')
+    statsCostMini: document.getElementById('total-cost-mini'),
+    mainScrollContainer: document.getElementById('main-scroll-container'), // New Scroll Container
+    navbar: document.getElementById('main-navbar') // New Navbar
 };
+
+// --- SCROLL EFFECT LOGIC ---
+if (ui.mainScrollContainer && ui.navbar) {
+    ui.mainScrollContainer.addEventListener('scroll', () => {
+        if (ui.mainScrollContainer.scrollTop > 20) {
+            ui.navbar.classList.add('scrolled');
+            ui.navbar.classList.remove('top-state');
+        } else {
+            ui.navbar.classList.remove('scrolled');
+            ui.navbar.classList.add('top-state');
+        }
+    });
+}
 
 // --- FORMATTERS ---
 const formatCost = (cost) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(cost);
@@ -61,15 +77,17 @@ ui.loginButton.addEventListener('click', async () => {
     catch (e) { showToast('Error', e.message, true); }
 });
 
-ui.logoutBtn.addEventListener('click', () => signOut(auth));
+const handleLogout = () => signOut(auth);
+if(ui.logoutBtn) ui.logoutBtn.addEventListener('click', handleLogout);
+if(ui.mobileLogoutBtn) ui.mobileLogoutBtn.addEventListener('click', handleLogout);
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         ui.loginScreen.classList.add('hidden');
         ui.appScreen.classList.remove('hidden');
-        ui.userPhoto.src = user.photoURL || 'https://placehold.co/40x40';
-        ui.userName.textContent = user.displayName || 'User';
+        if(ui.userPhoto) ui.userPhoto.src = user.photoURL || 'https://placehold.co/40x40';
+        if(ui.userName) ui.userName.textContent = user.displayName || 'User';
         fetchLicenses();
     } else {
         currentUser = null;
@@ -126,15 +144,15 @@ function renderList() {
 
         row.innerHTML = `
             <td class="p-4 pl-6"><input type="checkbox" data-id="${l.id}" class="license-checkbox w-4 h-4 rounded border-slate-300 bg-white checked:bg-teal-600 focus:ring-teal-500 text-teal-600"></td>
-            <td class="p-4 font-medium text-slate-900">${l.software}</td>
-            <td class="p-4"><span class="text-xs px-2 py-1 rounded-md bg-teal-50 text-teal-700 border border-teal-200 font-medium">${l.type}</span></td>
-            <td class="p-4 font-mono text-xs text-slate-600">${l.key || '-'}</td>
+            <td class="p-4 font-bold text-slate-800">${l.software}</td>
+            <td class="p-4"><span class="text-xs px-2 py-1 rounded-md bg-teal-50 text-teal-700 border border-teal-200 font-bold">${l.type}</span></td>
+            <td class="p-4 font-mono text-xs text-slate-600 bg-slate-50/50 rounded inline-block mt-2 px-2">${l.key || '-'}</td>
             <td class="p-4 text-teal-700 font-bold">${l.cost ? formatCost(l.cost) : 'Free'}</td>
             <td class="p-4 text-slate-600 text-xs">${l.type === 'Lifetime' ? '∞' : formatDate(l.expirationDate)}</td>
-            <td class="p-4 text-center"><span class="text-xs px-2 py-1 rounded-full border ${statusClass} font-medium">${l.status}</span></td>
+            <td class="p-4 text-center"><span class="text-xs px-2 py-1 rounded-full border ${statusClass} font-bold">${l.status}</span></td>
             <td class="p-4 pr-6 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                <button class="edit-btn text-slate-400 hover:text-teal-700 mx-1" data-id="${l.id}"><i class="ph-bold ph-pencil-simple"></i></button>
-                <button class="delete-btn text-slate-400 hover:text-rose-600 mx-1" data-id="${l.id}"><i class="ph-bold ph-trash"></i></button>
+                <button class="edit-btn text-slate-400 hover:text-teal-700 mx-1 p-2 rounded-lg hover:bg-teal-50 transition-colors" data-id="${l.id}"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
+                <button class="delete-btn text-slate-400 hover:text-rose-600 mx-1 p-2 rounded-lg hover:bg-rose-50 transition-colors" data-id="${l.id}"><i class="ph-bold ph-trash text-lg"></i></button>
             </td>
         `;
         ui.listBody.appendChild(row);
@@ -143,7 +161,7 @@ function renderList() {
     // Mobile Cards (Glass Look)
     pageItems.forEach(l => {
         const card = document.createElement('div');
-        card.className = 'glass-panel p-5 rounded-2xl space-y-3 border-l-4 border-teal-500 bg-white/80 shadow-sm';
+        card.className = 'glass-panel p-5 rounded-2xl space-y-3 border-l-4 border-teal-500 bg-white/60 shadow-sm';
         
         let statusClassMobile = '';
         if(l.status === 'Active') statusClassMobile = 'text-emerald-700 font-bold';
@@ -156,17 +174,17 @@ function renderList() {
                     <h4 class="font-bold text-slate-900 text-lg">${l.software}</h4>
                     <span class="text-xs text-teal-800 bg-teal-100 px-2 py-0.5 rounded mt-1 inline-block border border-teal-200 font-medium">${l.type}</span>
                 </div>
-                <button class="edit-btn w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 hover:text-teal-700" data-id="${l.id}"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button class="edit-btn w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 hover:text-teal-700 transition-colors" data-id="${l.id}"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
             </div>
-            <div class="grid grid-cols-2 gap-2 text-sm mt-2">
+            <div class="grid grid-cols-2 gap-2 text-sm mt-2 bg-white/50 p-3 rounded-xl border border-slate-100">
                 <div class="text-slate-500">Biaya</div>
                 <div class="text-right font-bold text-slate-800">${l.cost ? formatCost(l.cost) : 'Free'}</div>
                 <div class="text-slate-500">Status</div>
                 <div class="text-right"><span class="${statusClassMobile}">${l.status}</span></div>
             </div>
              <!-- Mobile Delete Button -->
-            <div class="pt-2 border-t border-slate-200/50 mt-2">
-                 <button class="delete-btn w-full py-2 text-xs text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 flex items-center justify-center gap-2" data-id="${l.id}">
+            <div class="pt-2 mt-2">
+                 <button class="delete-btn w-full py-2.5 text-xs font-bold text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-50 flex items-center justify-center gap-2 transition-colors" data-id="${l.id}">
                     <i class="ph-bold ph-trash"></i> Hapus Lisensi
                 </button>
             </div>
@@ -227,23 +245,23 @@ const rowContainer = document.getElementById('license-rows-container');
 function createRow(data = {}) {
     const id = Date.now();
     const div = document.createElement('div');
-    div.className = 'license-row glass-panel p-4 rounded-xl relative animate-fade-in bg-white/50';
+    div.className = 'license-row glass-panel p-5 rounded-2xl relative animate-fade-in bg-slate-50/50 border border-slate-200';
     div.innerHTML = `
-        ${data.software ? '' : '<button type="button" class="remove-row absolute -top-2 -right-2 w-6 h-6 bg-rose-500 rounded-full text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform">&times;</button>'}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+        ${data.software ? '' : '<button type="button" class="remove-row absolute -top-2 -right-2 w-7 h-7 bg-rose-500 rounded-full text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"><i class="ph-bold ph-x"></i></button>'}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-                <label class="block text-xs text-slate-500 mb-1 ml-1">Software</label>
-                <input type="text" class="field-software w-full glass-input rounded-lg p-2.5 text-sm text-slate-900 font-medium" value="${data.software || ''}" placeholder="Nama Software">
+                <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Software</label>
+                <input type="text" class="field-software w-full glass-input rounded-xl p-3 text-sm text-slate-900 font-bold" value="${data.software || ''}" placeholder="Nama Software">
             </div>
             <div>
-                <label class="block text-xs text-slate-500 mb-1 ml-1">Key / Serial</label>
-                <input type="text" class="field-key w-full glass-input rounded-lg p-2.5 text-sm font-mono text-slate-700" value="${data.key || ''}" placeholder="XXXX-XXXX-XXXX">
+                <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Key / Serial</label>
+                <input type="text" class="field-key w-full glass-input rounded-xl p-3 text-sm font-mono text-slate-700" value="${data.key || ''}" placeholder="XXXX-XXXX-XXXX">
             </div>
         </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-                <label class="block text-xs text-slate-500 mb-1 ml-1">Tipe</label>
-                <select class="field-type w-full glass-input rounded-lg p-2.5 text-sm text-slate-700 cursor-pointer">
+                <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tipe</label>
+                <select class="field-type w-full glass-input rounded-xl p-3 text-sm text-slate-700 cursor-pointer font-medium">
                     <option ${data.type==='Perpetual'?'selected':''}>Perpetual</option>
                     <option ${data.type==='Subscription'?'selected':''}>Subscription</option>
                     <option ${data.type==='Trial'?'selected':''}>Trial</option>
@@ -251,20 +269,20 @@ function createRow(data = {}) {
                 </select>
             </div>
             <div>
-                <label class="block text-xs text-slate-500 mb-1 ml-1">Status</label>
-                <select class="field-status w-full glass-input rounded-lg p-2.5 text-sm text-slate-700 cursor-pointer">
+                <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Status</label>
+                <select class="field-status w-full glass-input rounded-xl p-3 text-sm text-slate-700 cursor-pointer font-medium">
                     <option ${data.status==='Active'?'selected':''}>Active</option>
                     <option ${data.status==='Expired'?'selected':''}>Expired</option>
                     <option ${data.status==='Belum dipakai'?'selected':''}>Belum dipakai</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs text-slate-500 mb-1 ml-1">Harga</label>
-                <input type="number" class="field-cost w-full glass-input rounded-lg p-2.5 text-sm text-slate-700" value="${data.cost || 0}">
+                <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Harga</label>
+                <input type="number" class="field-cost w-full glass-input rounded-xl p-3 text-sm text-slate-700 font-medium" value="${data.cost || 0}">
             </div>
             <div>
-                <label class="block text-xs text-slate-500 mb-1 ml-1">Valid Hingga</label>
-                <input type="date" class="field-date w-full glass-input rounded-lg p-2.5 text-sm text-slate-700 cursor-pointer" value="${data.expirationDate ? new Date(data.expirationDate.seconds * 1000).toISOString().split('T')[0] : ''}">
+                <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Valid Hingga</label>
+                <input type="date" class="field-date w-full glass-input rounded-xl p-3 text-sm text-slate-700 cursor-pointer font-medium" value="${data.expirationDate ? new Date(data.expirationDate.seconds * 1000).toISOString().split('T')[0] : ''}">
             </div>
         </div>
     `;
@@ -293,7 +311,7 @@ document.getElementById('add-row-button').addEventListener('click', () => {
 });
 
 rowContainer.addEventListener('click', e => {
-    if(e.target.classList.contains('remove-row')) e.target.parentElement.remove();
+    if(e.target.closest('.remove-row')) e.target.closest('.remove-row').parentElement.remove();
 });
 
 ui.addBtn.addEventListener('click', () => openModal());
@@ -369,8 +387,8 @@ function updateBulkUI() {
     document.getElementById('bulk-edit-button').disabled = count === 0;
     document.getElementById('bulk-delete-button').disabled = count === 0;
     document.getElementById('selection-info').innerText = count > 0 
-        ? `${count} item dipilih.` 
-        : "Pilih item dari 'Daftar Lisensi'.";
+        ? `${count} item dipilih untuk diproses.` 
+        : "Pilih item dari 'Daftar Lisensi' terlebih dahulu untuk mengaktifkan panel kontrol ini.";
 }
 
 document.getElementById('bulk-delete-button').addEventListener('click', () => {
@@ -388,7 +406,7 @@ document.getElementById('bulk-delete-button').addEventListener('click', () => {
 
 document.getElementById('bulk-edit-button').addEventListener('click', () => {
     const count = document.querySelectorAll('.license-checkbox:checked').length;
-    document.getElementById('bulk-edit-info').innerText = `Mengedit ${count} item.`;
+    document.getElementById('bulk-edit-info').innerText = `Anda sedang mengedit ${count} item sekaligus.`;
     showModal('bulk-edit-modal');
 });
 
@@ -452,8 +470,11 @@ document.querySelectorAll('.sortable').forEach(th => {
         if(sortState.column === col) sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
         else { sortState.column = col; sortState.direction = 'asc'; }
         
-        document.querySelectorAll('.sort-icon').forEach(i => i.innerText = '');
-        th.querySelector('.sort-icon').innerText = sortState.direction === 'asc' ? '↑' : '↓';
+        document.querySelectorAll('.sort-icon').forEach(i => i.innerHTML = '<i class="ph-bold ph-caret-up-down"></i>');
+        const icon = sortState.direction === 'asc' ? '<i class="ph-bold ph-caret-up"></i>' : '<i class="ph-bold ph-caret-down"></i>';
+        th.querySelector('.sort-icon').innerHTML = icon;
+        th.querySelector('.sort-icon').classList.remove('opacity-0');
+        
         applyFilters();
     });
 });
@@ -466,7 +487,7 @@ function renderPagination() {
     for(let i=1; i<=pages; i++) {
         const btn = document.createElement('button');
         btn.innerText = i;
-        btn.className = `w-8 h-8 rounded-lg text-sm font-medium transition-colors ${i===currentPage ? 'bg-teal-600 text-white' : 'bg-white/50 text-slate-500 hover:bg-slate-100'}`;
+        btn.className = `w-10 h-10 rounded-xl text-sm font-bold transition-all transform hover:scale-105 ${i===currentPage ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/30' : 'bg-white text-slate-500 hover:bg-slate-100'}`;
         btn.addEventListener('click', () => { currentPage = i; renderList(); });
         ui.pagination.appendChild(btn);
     }
@@ -498,7 +519,18 @@ function updateCharts() {
     const config = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#475569', font: {family: 'Plus Jakarta Sans'} } } }
+        plugins: { 
+            legend: { 
+                position: 'bottom',
+                labels: { 
+                    usePointStyle: true,
+                    padding: 20,
+                    color: '#475569', 
+                    font: {family: 'Plus Jakarta Sans', weight: 600} 
+                } 
+            } 
+        },
+        layout: { padding: 10 }
     };
 
     // Destroy old charts
@@ -508,13 +540,13 @@ function updateCharts() {
 
     chartInstances.type = new Chart(ctxType, {
         type: 'doughnut',
-        data: { labels: Object.keys(typeCounts), datasets: [{ data: Object.values(typeCounts), backgroundColor: colors, borderWidth: 0 }] },
-        options: config
+        data: { labels: Object.keys(typeCounts), datasets: [{ data: Object.values(typeCounts), backgroundColor: colors, borderWidth: 0, hoverOffset: 10 }] },
+        options: { ...config, cutout: '70%' }
     });
 
     chartInstances.status = new Chart(ctxStatus, {
         type: 'pie',
-        data: { labels: Object.keys(statusCounts), datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#10b981', '#f43f5e', '#f59e0b', '#64748b'], borderWidth: 0 }] },
+        data: { labels: Object.keys(statusCounts), datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#10b981', '#f43f5e', '#f59e0b', '#64748b'], borderWidth: 0, hoverOffset: 10 }] },
         options: config
     });
 
@@ -526,14 +558,16 @@ function updateCharts() {
                 label: 'Total Biaya', 
                 data: Object.values(costByType), 
                 backgroundColor: '#0d9488', 
-                borderRadius: 8 
+                borderRadius: 8,
+                barThickness: 40
             }] 
         },
         options: {
             ...config,
+            plugins: { legend: { display: false } },
             scales: {
-                y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#475569' } },
-                x: { grid: { display: false }, ticks: { color: '#475569' } }
+                y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#475569', font: {family: 'Plus Jakarta Sans'} } },
+                x: { grid: { display: false }, ticks: { color: '#475569', font: {family: 'Plus Jakarta Sans', weight: 600} } }
             }
         }
     });
@@ -553,42 +587,43 @@ function showToast(title, msg, isError=false) {
     const t = document.getElementById('toast');
     document.getElementById('toast-title').innerText = title;
     document.getElementById('toast-message').innerText = msg;
-    document.getElementById('toast-icon').className = isError ? 'ph-fill ph-warning-circle text-rose-500 text-xl' : 'ph-fill ph-check-circle text-emerald-600 text-xl';
+    document.getElementById('toast-icon').className = isError ? 'ph-fill ph-warning-circle text-rose-500 text-2xl' : 'ph-fill ph-check-circle text-emerald-600 text-2xl';
     
-    // Reset class to base state first then apply show state
-    t.className = `fixed top-6 right-6 z-[60] flex items-center gap-3 px-4 py-3 rounded-xl glass-panel border-l-4 transition-all duration-300 shadow-2xl transform ${isError ? 'border-rose-500' : 'border-emerald-500'} translate-x-0 opacity-100 bg-white`;
+    t.className = `fixed top-24 right-6 z-[110] flex items-center gap-4 px-5 py-4 rounded-2xl glass-panel border-l-4 transition-all duration-300 transform translate-x-0 opacity-100 bg-white/90 backdrop-blur-md min-w-[300px] shadow-2xl ${isError ? 'border-rose-500' : 'border-emerald-500'}`;
     
-    // Hide logic
     setTimeout(() => {
-        t.classList.remove('translate-x-0', 'opacity-100');
-        t.classList.add('translate-x-full', 'opacity-0');
+        t.className = `fixed top-24 right-6 z-[110] flex items-center gap-4 px-5 py-4 rounded-2xl glass-panel border-l-4 transition-all duration-300 transform translate-x-full opacity-0 pointer-events-none shadow-2xl bg-white/90 backdrop-blur-md min-w-[300px] ${isError ? 'border-rose-500' : 'border-emerald-500'}`;
     }, 3000);
 }
 
 // Tab Logic
 document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active', 'text-teal-700', 'bg-teal-500/10', 'border-teal-600'));
-        document.querySelectorAll('.nav-item').forEach(b => b.classList.add('text-slate-500'));
-        btn.classList.add('active', 'text-teal-700');
-        btn.classList.remove('text-slate-500');
+        // Desktop handling (active class adds underline)
+        document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+        if(btn.classList.contains('nav-link')) btn.classList.add('active');
 
+        // Content handling
         const target = btn.dataset.tab;
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
         document.getElementById(target).classList.remove('hidden');
         
         // Close mobile sidebar if open
-        document.getElementById('sidebar').classList.add('-translate-x-full');
+        document.getElementById('sidebar').classList.add('translate-x-full');
         document.getElementById('mobile-menu-backdrop').classList.add('hidden');
     });
 });
 
-document.getElementById('open-sidebar-button').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.remove('-translate-x-full');
+document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('translate-x-full');
     document.getElementById('mobile-menu-backdrop').classList.remove('hidden');
 });
 document.getElementById('close-sidebar-button').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.add('-translate-x-full');
+    document.getElementById('sidebar').classList.add('translate-x-full');
+    document.getElementById('mobile-menu-backdrop').classList.add('hidden');
+});
+document.getElementById('mobile-menu-backdrop').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.add('translate-x-full');
     document.getElementById('mobile-menu-backdrop').classList.add('hidden');
 });
 
