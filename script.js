@@ -450,8 +450,9 @@ function applyFilters() {
     filteredLicenses.sort((a, b) => {
         let va = a[column], vb = b[column];
         if(column === 'expirationDate') {
-            va = va ? va.seconds : 0;
-            vb = vb ? vb.seconds : 0;
+            // Treats 'null' (Lifetime) as Infinity so it stays last/first correctly
+            va = va ? va.seconds : Infinity;
+            vb = vb ? vb.seconds : Infinity;
         }
         if (typeof va === 'string') return direction === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
         return direction === 'asc' ? va - vb : vb - va;

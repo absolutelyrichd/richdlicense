@@ -282,7 +282,6 @@
             </div>
 
             <!-- Desktop Menu (Center) - Always visible, centers perfectly with absolute position -->
-            <!-- Using absolute + translate to ensure it's dead center regardless of side elements width -->
             <div class="hidden md:flex items-center gap-8 bg-white/50 px-8 py-3 rounded-full border border-white/60 backdrop-blur-md shadow-sm transition-all absolute left-1/2 -translate-x-1/2" id="desktop-nav">
                 <button data-tab="tab-list" class="nav-item nav-link active text-sm cursor-pointer flex items-center gap-2.5">
                     <i class="ph-bold ph-squares-four text-lg"></i> Lisensi
@@ -406,14 +405,34 @@
                             <thead>
                                 <tr class="text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200 bg-slate-50/80">
                                     <th class="p-5 w-12"><input type="checkbox" id="select-all-checkbox" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4"></th>
+                                    
+                                    <!-- Software -->
                                     <th class="p-5 font-semibold cursor-pointer hover:text-teal-700 transition-colors sortable group" data-sort="software">
                                         Software <span class="sort-icon ml-1 opacity-0 group-hover:opacity-50 transition-opacity"><i class="ph-bold ph-caret-up-down"></i></span>
                                     </th>
-                                    <th class="p-5 font-semibold cursor-pointer hover:text-teal-700 transition-colors sortable" data-sort="type">Tipe</th>
+                                    
+                                    <!-- Tipe -->
+                                    <th class="p-5 font-semibold cursor-pointer hover:text-teal-700 transition-colors sortable group" data-sort="type">
+                                        Tipe <span class="sort-icon ml-1 opacity-0 group-hover:opacity-50 transition-opacity"><i class="ph-bold ph-caret-up-down"></i></span>
+                                    </th>
+                                    
                                     <th class="p-5 font-semibold">Key</th>
-                                    <th class="p-5 font-semibold cursor-pointer hover:text-teal-700 transition-colors sortable" data-sort="cost">Biaya</th>
-                                    <th class="p-5 font-semibold cursor-pointer hover:text-teal-700 transition-colors sortable" data-sort="expirationDate">Validitas</th>
-                                    <th class="p-5 font-semibold text-center">Status</th>
+                                    
+                                    <!-- Biaya -->
+                                    <th class="p-5 font-semibold cursor-pointer hover:text-teal-700 transition-colors sortable group" data-sort="cost">
+                                        Biaya <span class="sort-icon ml-1 opacity-0 group-hover:opacity-50 transition-opacity"><i class="ph-bold ph-caret-up-down"></i></span>
+                                    </th>
+                                    
+                                    <!-- Validitas -->
+                                    <th class="p-5 font-semibold cursor-pointer hover:text-teal-700 transition-colors sortable group" data-sort="expirationDate">
+                                        Validitas <span class="sort-icon ml-1 opacity-0 group-hover:opacity-50 transition-opacity"><i class="ph-bold ph-caret-up-down"></i></span>
+                                    </th>
+                                    
+                                    <!-- Status -->
+                                    <th class="p-5 font-semibold text-center cursor-pointer hover:text-teal-700 transition-colors sortable group" data-sort="status">
+                                        Status <span class="sort-icon ml-1 opacity-0 group-hover:opacity-50 transition-opacity"><i class="ph-bold ph-caret-up-down"></i></span>
+                                    </th>
+                                    
                                     <th class="p-5 text-right">Aksi</th>
                                 </tr>
                             </thead>
