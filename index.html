@@ -112,50 +112,63 @@
             box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
         }
 
-        /* --- Navbar Logic Updated --- */
+        /* --- Navbar Animations & Logic --- */
         #main-navbar {
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, padding 0.4s ease;
         }
-        
-        /* Mobile Default Scrolled State */
-        #main-navbar.scrolled {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
-        }
-        
-        /* Desktop "Floating Pill" Logic */
-        @media (min-width: 768px) {
-            #main-navbar.scrolled {
-                background: transparent;
-                border-bottom: none;
-                box-shadow: none;
-                padding-top: 1rem;
-                padding-bottom: 1rem;
-                pointer-events: none; /* Allows clicking through the empty areas */
-            }
 
-            /* Hide Logo & Profile when scrolled on Desktop */
+        /* Nav Side Elements (Logo & Profile) Transition */
+        .nav-side-element {
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Desktop Nav Center Pill Transition */
+        #desktop-nav {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* --- Scrolled State (Desktop) --- */
+        @media (min-width: 768px) {
+            /* Hide Logo & Profile when scrolled */
             #main-navbar.scrolled .nav-side-element {
                 opacity: 0;
-                transform: translateY(-20px) scale(0.9);
-                pointer-events: none;
+                transform: translateY(-20px);
+                pointer-events: none; /* Prevent clicks on hidden elements */
             }
 
-            /* Transform the Center Menu into the Pill */
+            /* Main Navbar becomes invisible wrapper to let clicks pass through sides */
+            #main-navbar.scrolled {
+                background-color: transparent;
+                border-bottom-color: transparent;
+                box-shadow: none;
+                pointer-events: none; 
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+            }
+
+            /* Transform Center Nav into Glass Pill */
             #main-navbar.scrolled #desktop-nav {
-                pointer-events: auto; /* Re-enable clicks on the menu */
+                pointer-events: auto; /* Re-enable clicks on the pill */
                 background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 1);
-                box-shadow: 0 10px 30px -5px rgba(15, 118, 110, 0.15), 0 4px 10px -5px rgba(0,0,0,0.05);
-                transform: translateY(5px) scale(1.02);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                box-shadow: 0 10px 25px -5px rgba(15, 118, 110, 0.1), 0 4px 10px -5px rgba(0, 0, 0, 0.05);
+                transform: translateX(-50%) translateY(5px) scale(1.05); /* Keep centered + scale up slightly */
                 padding-left: 2rem;
                 padding-right: 2rem;
+            }
+        }
+
+        /* --- Scrolled State (Mobile) --- */
+        @media (max-width: 767px) {
+            #main-navbar.scrolled {
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(16px);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+                box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
             }
         }
 
@@ -165,16 +178,6 @@
             box-shadow: none;
             padding-top: 1.5rem;
             padding-bottom: 1.5rem;
-        }
-
-        /* Transition for elements */
-        .nav-side-element {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-origin: center;
-        }
-        
-        #desktop-nav {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .nav-link {
@@ -258,10 +261,10 @@
     <!-- Main App Screen -->
     <div id="app-screen" class="hidden h-screen flex flex-col relative z-10">
         
-        <!-- NEW NAVBAR (Floating Pill Logic Applied) -->
+        <!-- NEW NAVBAR (Dynamic: Logo/Profile Fade on Scroll) -->
         <nav id="main-navbar" class="fixed top-0 left-0 right-0 z-50 top-state px-6 lg:px-12 flex justify-between items-center">
             
-            <!-- Brand (Left) - Added 'nav-side-element' -->
+            <!-- Brand (Left) - Visible on top, hides on scroll (Desktop) -->
             <div class="nav-side-element flex items-center gap-2">
                 <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
                     <i class="ph-bold ph-command text-lg"></i>
@@ -269,9 +272,9 @@
                 <h1 class="text-xl font-bold text-slate-800 tracking-wide">RichD<span class="text-teal-600">App</span></h1>
             </div>
 
-            <!-- Desktop Menu (Center) - Remains visible but transforms -->
-            <!-- Matches the image: Rounded pill, simple text/icons -->
-            <div class="hidden md:flex items-center gap-8 bg-white/50 px-8 py-3 rounded-full border border-white/60 backdrop-blur-md shadow-sm transition-all" id="desktop-nav">
+            <!-- Desktop Menu (Center) - Always visible, centers perfectly with absolute position -->
+            <!-- Using absolute + translate to ensure it's dead center regardless of side elements width -->
+            <div class="hidden md:flex items-center gap-8 bg-white/50 px-8 py-3 rounded-full border border-white/60 backdrop-blur-md shadow-sm transition-all absolute left-1/2 -translate-x-1/2" id="desktop-nav">
                 <button data-tab="tab-list" class="nav-item nav-link active text-sm cursor-pointer flex items-center gap-2.5">
                     <i class="ph-bold ph-squares-four text-lg"></i> Lisensi
                 </button>
@@ -286,9 +289,9 @@
                 </button>
             </div>
 
-            <!-- User Profile & Mobile Toggle (Right) - Added 'nav-side-element' -->
+            <!-- User Profile & Mobile Toggle (Right) -->
             <div class="nav-side-element flex items-center gap-4">
-                <!-- User Profile -->
+                <!-- User Profile (Desktop) -->
                 <div class="hidden sm:flex items-center gap-3 pl-4 border-l border-slate-300/50">
                     <div class="text-right hidden lg:block">
                         <p id="user-name" class="text-sm font-bold text-slate-700 leading-none">User</p>
@@ -297,7 +300,7 @@
                     <img id="user-photo" src="" alt="User" class="w-10 h-10 rounded-full ring-2 ring-white shadow-md object-cover">
                 </div>
 
-                <!-- Mobile Menu Button -->
+                <!-- Mobile Menu Button (Always visible on mobile) -->
                 <button id="mobile-menu-toggle" class="md:hidden text-slate-600 p-2 rounded-lg hover:bg-slate-100">
                     <i class="ph ph-list text-2xl"></i>
                 </button>
@@ -333,7 +336,6 @@
         </aside>
 
         <!-- Main Content Area -->
-        <!-- Added pt-28 to compensate for navbar -->
         <main id="main-scroll-container" class="flex-1 overflow-y-auto scroll-smooth pt-28 pb-8 px-4 md:px-8 lg:px-16">
             
             <div class="max-w-7xl mx-auto min-h-[calc(100vh-8rem)]">
