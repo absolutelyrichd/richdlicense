@@ -247,23 +247,49 @@
         <div class="aurora-blob blob-3"></div>
     </div>
 
-    <!-- Login Screen -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative z-10">
-        <div class="glass-panel w-full max-w-md rounded-3xl p-10 text-center border-t border-l border-white/60 shadow-xl relative overflow-hidden bg-white/70">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-500 via-emerald-500 to-lime-500"></div>
+    <!-- Login Screen (Revamped) -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative z-10 transition-opacity duration-500">
+        <div class="glass-panel w-full max-w-5xl h-[600px] rounded-[2.5rem] flex overflow-hidden shadow-2xl relative bg-white/60 backdrop-blur-xl border border-white/60">
             
-            <div class="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 shadow-lg shadow-emerald-500/30 animate-float text-white">
-                <i class="ph ph-key text-3xl"></i>
+            <!-- Left Side: Hero/Brand (Desktop only) -->
+            <div class="hidden md:flex w-1/2 bg-gradient-to-br from-teal-600 to-emerald-800 relative items-center justify-center p-12 text-white overflow-hidden">
+                <!-- Decorative Circles -->
+                <div class="absolute top-0 left-0 w-full h-full opacity-20">
+                    <div class="absolute top-[-20%] left-[-20%] w-[600px] h-[600px] rounded-full bg-white blur-3xl mix-blend-overlay animate-blob"></div>
+                    <div class="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] rounded-full bg-teal-300 blur-3xl mix-blend-overlay animate-blob animation-delay-2000"></div>
+                </div>
+                
+                <div class="relative z-10 text-center">
+                    <div class="w-24 h-24 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner border border-white/30">
+                        <i class="ph-duotone ph-shield-check text-6xl text-white"></i>
+                    </div>
+                    <h2 class="text-4xl font-bold mb-4 tracking-tight">Kelola Aset Digital</h2>
+                    <p class="text-teal-100 text-lg font-medium leading-relaxed">Platform manajemen lisensi software yang aman, terpusat, dan efisien untuk kebutuhan Anda.</p>
+                </div>
             </div>
-            
-            <h1 class="text-4xl font-bold text-slate-800 mb-3 tracking-tight">RichD</h1>
-            <p class="text-slate-500 mb-10 font-light">Manajemen Lisensi</p>
-            
-            <button id="login-button" class="group w-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold py-3.5 px-6 rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6 mr-3" alt="Google">
-                <span class="text-base">Lanjutkan dengan Google</span>
-                <i class="ph ph-arrow-right ml-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-teal-500"></i>
-            </button>
+
+            <!-- Right Side: Login Form -->
+            <div class="w-full md:w-1/2 flex flex-col items-center justify-center p-8 md:p-16 bg-white/40 relative">
+                <div class="w-full max-w-sm text-center">
+                    <div class="mb-8 inline-flex md:hidden items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 shadow-lg text-white">
+                        <i class="ph-bold ph-command text-3xl"></i>
+                    </div>
+                    
+                    <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800 mb-2">Selamat Datang</h1>
+                    <p class="text-slate-500 mb-10">Silakan masuk untuk mengakses dashboard.</p>
+                    
+                    <button id="login-button" class="group relative w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-700 font-bold py-4 px-6 rounded-2xl border border-slate-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6" alt="Google">
+                        <span class="text-base">Masuk dengan Google</span>
+                        <div class="absolute inset-0 rounded-2xl ring-2 ring-teal-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </button>
+                    
+                    <div class="mt-12 flex items-center justify-center gap-2 text-xs text-slate-400 font-medium">
+                        <i class="ph-fill ph-lock-key"></i>
+                        <span>Enkripsi End-to-End Aman</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
