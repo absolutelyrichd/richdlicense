@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy, setDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- CONFIG ---
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -22,10 +22,10 @@ const provider = new GoogleAuthProvider();
 
 let currentUser = null;
 let licenses = [];
-let licenseTypes = []; // NEW: Store custom types
+let licenseTypes = [];
 let filteredLicenses = [];
 let unsubscribe = null; 
-let unsubscribeTypes = null; // NEW: Listener for types
+let unsubscribeTypes = null;
 let currentPage = 1;
 const licensesPerPage = 10;
 let sortState = { column: 'software', direction: 'asc' };
@@ -51,7 +51,6 @@ const ui = {
     statsCostMini: document.getElementById('total-cost-mini'),
     mainScrollContainer: document.getElementById('main-scroll-container'),
     navbar: document.getElementById('main-navbar'),
-    // Type Management UI
     typeListContainer: document.getElementById('types-list-container'),
     addTypeForm: document.getElementById('add-type-form'),
     filterTypeSelect: document.getElementById('filter-type'),
@@ -116,7 +115,7 @@ function fetchData() {
         updateMiniStats();
     });
 
-    // 2. Fetch Types (NEW)
+    // 2. Fetch Types
     const typesQ = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'custom_types'), orderBy("name"));
     unsubscribeTypes = onSnapshot(typesQ, async (snapshot) => {
         licenseTypes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -156,7 +155,7 @@ function updateMiniStats() {
     ui.statsCostMini.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', notation: "compact" }).format(total);
 }
 
-// --- TYPE MANAGEMENT (NEW) ---
+// --- TYPE MANAGEMENT ---
 function renderTypesSettings() {
     if (!ui.typeListContainer) return;
     ui.typeListContainer.innerHTML = '';
@@ -187,15 +186,32 @@ function renderTypesSettings() {
                 <span class="font-bold text-slate-700">${t.name}</span>
                 <span class="text-xs px-2 py-0.5 rounded ${colorClass} font-medium border">Preview</span>
             </div>
-            <button class="delete-type-btn p-2 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors" data-id="${t.id}">
-                <i class="ph-bold ph-trash"></i>
-            </button>
+            <div class="flex gap-1">
+                <button class="edit-type-btn p-2 rounded-lg hover:bg-teal-50 text-slate-400 hover:text-teal-600 transition-colors" data-id="${t.id}" data-name="${t.name}" data-color="${t.color}">
+                    <i class="ph-bold ph-pencil-simple"></i>
+                </button>
+                <button class="delete-type-btn p-2 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors" data-id="${t.id}">
+                    <i class="ph-bold ph-trash"></i>
+                </button>
+            </div>
         `;
         ui.typeListContainer.appendChild(div);
     });
 
     document.querySelectorAll('.delete-type-btn').forEach(btn => {
         btn.addEventListener('click', (e) => confirmDelete(e.currentTarget.dataset.id, 'type'));
+    });
+
+    // Add Edit Listener
+    document.querySelectorAll('.edit-type-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const { id, name, color } = e.currentTarget.dataset;
+            document.getElementById('edit-type-id').value = id;
+            document.getElementById('edit-type-name').value = name;
+            document.getElementById('edit-type-name').dataset.oldName = name; // Store old name for cascading update
+            document.getElementById('edit-type-color').value = color;
+            showModal('edit-type-modal');
+        });
     });
 }
 
@@ -208,7 +224,6 @@ ui.addTypeForm.addEventListener('submit', async (e) => {
     
     if (!name) return;
 
-    // Check duplicate
     if (licenseTypes.some(t => t.name.toLowerCase() === name.toLowerCase())) {
         showToast('Info', 'Tipe ini sudah ada.', true);
         return;
@@ -226,12 +241,47 @@ ui.addTypeForm.addEventListener('submit', async (e) => {
     }
 });
 
+// Edit Type Submit
+document.getElementById('edit-type-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-type-id').value;
+    const name = document.getElementById('edit-type-name').value.trim();
+    const color = document.getElementById('edit-type-color').value;
+    const oldName = document.getElementById('edit-type-name').dataset.oldName;
+
+    if (!name) return;
+
+    try {
+        const batch = writeBatch(db);
+        const typeRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'custom_types', id);
+        
+        // 1. Update Definition
+        batch.update(typeRef, { name, color });
+
+        // 2. Cascading Update (if name changed)
+        if (name !== oldName) {
+            const q = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses'), where('type', '==', oldName));
+            const snapshot = await getDocs(q);
+            snapshot.docs.forEach(doc => {
+                batch.update(doc.ref, { type: name });
+            });
+        }
+
+        await batch.commit();
+        showToast('Sukses', 'Tipe berhasil diperbarui');
+        hideAllModals();
+    } catch (err) {
+        showToast('Error', err.message, true);
+    }
+});
+
+document.getElementById('cancel-edit-type').addEventListener('click', hideAllModals);
+
 // Update Dropdowns dynamically
 function updateAllTypeDropdowns() {
-    // Helper to populate select
     const fillSelect = (selectEl, includeAllOption = false) => {
         if (!selectEl) return;
-        const currentVal = selectEl.value; // Try to preserve selection
+        const currentVal = selectEl.value; 
         selectEl.innerHTML = includeAllOption ? '<option value="">Semua Tipe</option>' : '';
         
         licenseTypes.forEach(t => {
@@ -240,7 +290,6 @@ function updateAllTypeDropdowns() {
             opt.innerText = t.name;
             selectEl.appendChild(opt);
         });
-        // If the previously selected value still exists, select it
         if (currentVal && Array.from(selectEl.options).some(o => o.value === currentVal)) {
             selectEl.value = currentVal;
         }
@@ -248,13 +297,10 @@ function updateAllTypeDropdowns() {
 
     fillSelect(ui.filterTypeSelect, true);
     fillSelect(ui.bulkTypeSelect);
-    
-    // Also update any open modal rows if they exist
     document.querySelectorAll('.field-type').forEach(select => {
         fillSelect(select);
     });
 }
-
 
 // --- RENDERING ---
 function renderList() {
@@ -270,14 +316,12 @@ function renderList() {
         return;
     }
 
-    // Colors mapping helper
     const getTypeColor = (typeName) => {
         const typeObj = licenseTypes.find(t => t.name === typeName);
         const color = typeObj ? typeObj.color : 'slate';
         return `text-${color}-700 bg-${color}-50 border-${color}-200`;
     };
 
-    // Desktop Table
     pageItems.forEach(l => {
         const row = document.createElement('tr');
         row.className = 'floating-row border-b border-slate-100 hover:bg-slate-50 transition-colors group';
@@ -287,7 +331,6 @@ function renderList() {
         else if(l.status === 'Expired') statusClass = 'text-rose-700 bg-rose-100 border-rose-200';
         else statusClass = 'text-slate-600 bg-slate-100 border-slate-200';
 
-        // Dynamic Type Badge
         const typeClass = getTypeColor(l.type);
 
         row.innerHTML = `
@@ -306,7 +349,6 @@ function renderList() {
         ui.listBody.appendChild(row);
     });
 
-    // Mobile Cards (Glass Look)
     pageItems.forEach(l => {
         const card = document.createElement('div');
         card.className = 'glass-panel p-5 rounded-2xl space-y-3 border-l-4 border-teal-500 bg-white/60 shadow-sm';
@@ -316,7 +358,6 @@ function renderList() {
         else if(l.status === 'Expired') statusClassMobile = 'text-rose-700 font-bold';
         else statusClassMobile = 'text-slate-600 font-medium';
         
-        // Mobile Type Color (using background for mobile pill)
         const typeObj = licenseTypes.find(t => t.name === l.type);
         const colorName = typeObj ? typeObj.color : 'slate';
         const typeClassMobile = `text-${colorName}-800 bg-${colorName}-100 border-${colorName}-200`;
@@ -335,7 +376,6 @@ function renderList() {
                 <div class="text-slate-500">Status</div>
                 <div class="text-right"><span class="${statusClassMobile}">${l.status}</span></div>
             </div>
-             <!-- Mobile Delete Button -->
             <div class="pt-2 mt-2">
                  <button class="delete-btn w-full py-2.5 text-xs font-bold text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-50 flex items-center justify-center gap-2 transition-colors" data-id="${l.id}">
                     <i class="ph-bold ph-trash"></i> Hapus Lisensi
@@ -360,7 +400,8 @@ function attachEventListeners() {
 const modals = {
     form: document.getElementById('license-modal'),
     bulk: document.getElementById('bulk-edit-modal'),
-    delete: document.getElementById('delete-confirm-modal')
+    delete: document.getElementById('delete-confirm-modal'),
+    editType: document.getElementById('edit-type-modal')
 };
 
 function showModal(modalId) {
@@ -368,7 +409,6 @@ function showModal(modalId) {
     Object.values(modals).forEach(m => m.classList.add('hidden'));
     document.getElementById(modalId).classList.remove('hidden');
     
-    // Animation
     setTimeout(() => {
         ui.backdrop.classList.remove('opacity-0');
         document.getElementById(modalId).firstElementChild.classList.remove('scale-95');
@@ -400,7 +440,6 @@ function createRow(data = {}) {
     const div = document.createElement('div');
     div.className = 'license-row glass-panel p-5 rounded-2xl relative animate-fade-in bg-slate-50/50 border border-slate-200';
     
-    // Generate Dynamic Options
     const typeOptions = licenseTypes.map(t => 
         `<option value="${t.name}" ${data.type === t.name ? 'selected' : ''}>${t.name}</option>`
     ).join('');
@@ -517,7 +556,6 @@ document.getElementById('license-form').addEventListener('submit', async (e) => 
 // --- DELETION ---
 let deleteCallback = null;
 function confirmDelete(id, context = 'license') {
-    const confirmBtn = document.getElementById('confirm-delete-button');
     const msg = document.getElementById('delete-confirm-message');
     
     if (context === 'type') {
@@ -673,7 +711,7 @@ function updateCharts() {
     
     if(!ctxType || !ctxStatus || !ctxCost) return;
 
-    // Theme Colors (Professional Teal Palette)
+    // Theme Colors
     const colors = ['#0d9488', '#14b8a6', '#f59e0b', '#3b82f6', '#6366f1'];
     
     // Data Prep
@@ -704,7 +742,6 @@ function updateCharts() {
         layout: { padding: 10 }
     };
 
-    // Destroy old charts
     if(chartInstances.type) chartInstances.type.destroy();
     if(chartInstances.status) chartInstances.status.destroy();
     if(chartInstances.cost) chartInstances.cost.destroy();
@@ -743,7 +780,6 @@ function updateCharts() {
         }
     });
     
-    // Cost Text
     const total = Object.values(costByType).reduce((a,b)=>a+b,0);
     document.getElementById('total-cost').innerText = formatCost(total);
     
@@ -770,16 +806,13 @@ function showToast(title, msg, isError=false) {
 // Tab Logic
 document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
-        // Desktop handling (active class adds underline)
         document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
         if(btn.classList.contains('nav-link')) btn.classList.add('active');
 
-        // Content handling
         const target = btn.dataset.tab;
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
         document.getElementById(target).classList.remove('hidden');
         
-        // Close mobile sidebar if open
         document.getElementById('sidebar').classList.add('translate-x-full');
         document.getElementById('mobile-menu-backdrop').classList.add('hidden');
     });

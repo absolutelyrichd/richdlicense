@@ -655,6 +655,35 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Edit Type Modal (NEW) -->
+        <div id="edit-type-modal" class="hidden w-full max-w-sm mx-4">
+            <div class="glass-panel bg-white rounded-3xl p-6 shadow-2xl transform scale-95 transition-all">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">Edit Tipe</h3>
+                <form id="edit-type-form">
+                    <input type="hidden" id="edit-type-id">
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Nama Tipe</label>
+                        <input type="text" id="edit-type-name" class="glass-input w-full rounded-xl p-3 text-sm font-bold text-slate-800" required>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Warna Badge</label>
+                        <select id="edit-type-color" class="glass-input w-full rounded-xl p-3 text-sm cursor-pointer">
+                            <option value="teal">Teal</option>
+                            <option value="blue">Blue</option>
+                            <option value="purple">Purple</option>
+                            <option value="amber">Amber</option>
+                            <option value="rose">Rose</option>
+                            <option value="slate">Slate</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button type="button" id="cancel-edit-type" class="px-5 py-2.5 rounded-xl text-slate-500 hover:bg-slate-100 font-medium">Batal</button>
+                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-teal-600 text-white hover:bg-teal-700 font-bold shadow-lg shadow-teal-500/20">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notification -->
