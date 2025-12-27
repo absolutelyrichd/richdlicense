@@ -22,8 +22,10 @@ const provider = new GoogleAuthProvider();
 
 let currentUser = null;
 let licenses = [];
+let licenseTypes = []; // NEW: Store custom types
 let filteredLicenses = [];
 let unsubscribe = null; 
+let unsubscribeTypes = null; // NEW: Listener for types
 let currentPage = 1;
 const licensesPerPage = 10;
 let sortState = { column: 'software', direction: 'asc' };
@@ -36,7 +38,7 @@ const ui = {
     userPhoto: document.getElementById('user-photo'),
     userName: document.getElementById('user-name'),
     logoutBtn: document.getElementById('logout-button-text'),
-    mobileLogoutBtn: document.getElementById('mobile-logout-btn'), // Added mobile logout
+    mobileLogoutBtn: document.getElementById('mobile-logout-btn'),
     listBody: document.getElementById('license-list-body'),
     listCards: document.getElementById('license-list-cards'),
     pagination: document.getElementById('pagination-container'),
@@ -47,8 +49,13 @@ const ui = {
     statsActive: document.getElementById('count-active'),
     statsExpired: document.getElementById('count-expired'),
     statsCostMini: document.getElementById('total-cost-mini'),
-    mainScrollContainer: document.getElementById('main-scroll-container'), // New Scroll Container
-    navbar: document.getElementById('main-navbar') // New Navbar
+    mainScrollContainer: document.getElementById('main-scroll-container'),
+    navbar: document.getElementById('main-navbar'),
+    // Type Management UI
+    typeListContainer: document.getElementById('types-list-container'),
+    addTypeForm: document.getElementById('add-type-form'),
+    filterTypeSelect: document.getElementById('filter-type'),
+    bulkTypeSelect: document.getElementById('bulk-type')
 };
 
 // --- SCROLL EFFECT LOGIC ---
@@ -88,17 +95,19 @@ onAuthStateChanged(auth, (user) => {
         ui.appScreen.classList.remove('hidden');
         if(ui.userPhoto) ui.userPhoto.src = user.photoURL || 'https://placehold.co/40x40';
         if(ui.userName) ui.userName.textContent = user.displayName || 'User';
-        fetchLicenses();
+        fetchData();
     } else {
         currentUser = null;
         ui.loginScreen.classList.remove('hidden');
         ui.appScreen.classList.add('hidden');
         if (unsubscribe) unsubscribe();
+        if (unsubscribeTypes) unsubscribeTypes();
     }
 });
 
-// --- DATA FETCHING ---
-function fetchLicenses() {
+// --- DATA FETCHING (Licenses & Types) ---
+function fetchData() {
+    // 1. Fetch Licenses
     const q = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses'), orderBy("software"));
     unsubscribe = onSnapshot(q, (snapshot) => {
         licenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -106,6 +115,35 @@ function fetchLicenses() {
         updateCharts();
         updateMiniStats();
     });
+
+    // 2. Fetch Types (NEW)
+    const typesQ = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'custom_types'), orderBy("name"));
+    unsubscribeTypes = onSnapshot(typesQ, async (snapshot) => {
+        licenseTypes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Auto-seed defaults if empty for first-time users
+        if (licenseTypes.length === 0 && !snapshot.metadata.hasPendingWrites) {
+            await seedDefaultTypes();
+        } else {
+            renderTypesSettings();
+            updateAllTypeDropdowns();
+            renderList(); // Re-render list to apply dynamic colors
+        }
+    });
+}
+
+async function seedDefaultTypes() {
+    const defaults = [
+        { name: 'Perpetual', color: 'teal' },
+        { name: 'Subscription', color: 'blue' },
+        { name: 'Trial', color: 'amber' },
+        { name: 'Lifetime', color: 'purple' },
+        { name: 'Giveaway', color: 'rose' }
+    ];
+    const batch = writeBatch(db);
+    const colRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'custom_types');
+    defaults.forEach(t => batch.set(doc(colRef), t));
+    await batch.commit();
 }
 
 function updateMiniStats() {
@@ -117,6 +155,106 @@ function updateMiniStats() {
     ui.statsExpired.innerText = expired;
     ui.statsCostMini.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', notation: "compact" }).format(total);
 }
+
+// --- TYPE MANAGEMENT (NEW) ---
+function renderTypesSettings() {
+    if (!ui.typeListContainer) return;
+    ui.typeListContainer.innerHTML = '';
+    
+    if (licenseTypes.length === 0) {
+        document.getElementById('empty-types-msg').classList.remove('hidden');
+        return;
+    }
+    document.getElementById('empty-types-msg').classList.add('hidden');
+
+    const colorClasses = {
+        teal: 'bg-teal-100 text-teal-700 border-teal-200',
+        blue: 'bg-blue-100 text-blue-700 border-blue-200',
+        purple: 'bg-purple-100 text-purple-700 border-purple-200',
+        amber: 'bg-amber-100 text-amber-700 border-amber-200',
+        rose: 'bg-rose-100 text-rose-700 border-rose-200',
+        slate: 'bg-slate-100 text-slate-700 border-slate-200',
+    };
+
+    licenseTypes.forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white transition-all';
+        const colorClass = colorClasses[t.color] || colorClasses.slate;
+        
+        div.innerHTML = `
+            <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-${t.color}-500"></span>
+                <span class="font-bold text-slate-700">${t.name}</span>
+                <span class="text-xs px-2 py-0.5 rounded ${colorClass} font-medium border">Preview</span>
+            </div>
+            <button class="delete-type-btn p-2 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors" data-id="${t.id}">
+                <i class="ph-bold ph-trash"></i>
+            </button>
+        `;
+        ui.typeListContainer.appendChild(div);
+    });
+
+    document.querySelectorAll('.delete-type-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => confirmDelete(e.currentTarget.dataset.id, 'type'));
+    });
+}
+
+// Add New Type
+ui.addTypeForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nameInput = document.getElementById('new-type-name');
+    const colorInput = document.getElementById('new-type-color');
+    const name = nameInput.value.trim();
+    
+    if (!name) return;
+
+    // Check duplicate
+    if (licenseTypes.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+        showToast('Info', 'Tipe ini sudah ada.', true);
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'custom_types'), {
+            name: name,
+            color: colorInput.value || 'slate'
+        });
+        showToast('Sukses', 'Tipe baru ditambahkan');
+        nameInput.value = '';
+    } catch (err) {
+        showToast('Error', err.message, true);
+    }
+});
+
+// Update Dropdowns dynamically
+function updateAllTypeDropdowns() {
+    // Helper to populate select
+    const fillSelect = (selectEl, includeAllOption = false) => {
+        if (!selectEl) return;
+        const currentVal = selectEl.value; // Try to preserve selection
+        selectEl.innerHTML = includeAllOption ? '<option value="">Semua Tipe</option>' : '';
+        
+        licenseTypes.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.name;
+            opt.innerText = t.name;
+            selectEl.appendChild(opt);
+        });
+        // If the previously selected value still exists, select it
+        if (currentVal && Array.from(selectEl.options).some(o => o.value === currentVal)) {
+            selectEl.value = currentVal;
+        }
+    };
+
+    fillSelect(ui.filterTypeSelect, true);
+    fillSelect(ui.bulkTypeSelect);
+    
+    // Also update any open modal rows if they exist
+    document.querySelectorAll('.field-type').forEach(select => {
+        fillSelect(select);
+    });
+}
+
 
 // --- RENDERING ---
 function renderList() {
@@ -132,6 +270,13 @@ function renderList() {
         return;
     }
 
+    // Colors mapping helper
+    const getTypeColor = (typeName) => {
+        const typeObj = licenseTypes.find(t => t.name === typeName);
+        const color = typeObj ? typeObj.color : 'slate';
+        return `text-${color}-700 bg-${color}-50 border-${color}-200`;
+    };
+
     // Desktop Table
     pageItems.forEach(l => {
         const row = document.createElement('tr');
@@ -142,10 +287,13 @@ function renderList() {
         else if(l.status === 'Expired') statusClass = 'text-rose-700 bg-rose-100 border-rose-200';
         else statusClass = 'text-slate-600 bg-slate-100 border-slate-200';
 
+        // Dynamic Type Badge
+        const typeClass = getTypeColor(l.type);
+
         row.innerHTML = `
             <td class="p-4 pl-6"><input type="checkbox" data-id="${l.id}" class="license-checkbox w-4 h-4 rounded border-slate-300 bg-white checked:bg-teal-600 focus:ring-teal-500 text-teal-600"></td>
             <td class="p-4 font-bold text-slate-800">${l.software}</td>
-            <td class="p-4"><span class="text-xs px-2 py-1 rounded-md bg-teal-50 text-teal-700 border border-teal-200 font-bold">${l.type}</span></td>
+            <td class="p-4"><span class="text-xs px-2 py-1 rounded-md border font-bold ${typeClass}">${l.type}</span></td>
             <td class="p-4 font-mono text-xs text-slate-600 bg-slate-50/50 rounded inline-block mt-2 px-2">${l.key || '-'}</td>
             <td class="p-4 text-teal-700 font-bold">${l.cost ? formatCost(l.cost) : 'Free'}</td>
             <td class="p-4 text-slate-600 text-xs">${l.type === 'Lifetime' ? '∞' : formatDate(l.expirationDate)}</td>
@@ -167,12 +315,17 @@ function renderList() {
         if(l.status === 'Active') statusClassMobile = 'text-emerald-700 font-bold';
         else if(l.status === 'Expired') statusClassMobile = 'text-rose-700 font-bold';
         else statusClassMobile = 'text-slate-600 font-medium';
+        
+        // Mobile Type Color (using background for mobile pill)
+        const typeObj = licenseTypes.find(t => t.name === l.type);
+        const colorName = typeObj ? typeObj.color : 'slate';
+        const typeClassMobile = `text-${colorName}-800 bg-${colorName}-100 border-${colorName}-200`;
 
         card.innerHTML = `
             <div class="flex justify-between items-start">
                 <div>
                     <h4 class="font-bold text-slate-900 text-lg">${l.software}</h4>
-                    <span class="text-xs text-teal-800 bg-teal-100 px-2 py-0.5 rounded mt-1 inline-block border border-teal-200 font-medium">${l.type}</span>
+                    <span class="text-xs px-2 py-0.5 rounded mt-1 inline-block border font-medium ${typeClassMobile}">${l.type}</span>
                 </div>
                 <button class="edit-btn w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 hover:text-teal-700 transition-colors" data-id="${l.id}"><i class="ph-bold ph-pencil-simple text-lg"></i></button>
             </div>
@@ -199,7 +352,7 @@ function renderList() {
 
 function attachEventListeners() {
     document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', (e) => openModal(e.currentTarget.dataset.id)));
-    document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', (e) => confirmDelete(e.currentTarget.dataset.id)));
+    document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', (e) => confirmDelete(e.currentTarget.dataset.id, 'license')));
     document.querySelectorAll('.license-checkbox').forEach(c => c.addEventListener('change', updateBulkUI));
 }
 
@@ -246,6 +399,12 @@ function createRow(data = {}) {
     const id = Date.now();
     const div = document.createElement('div');
     div.className = 'license-row glass-panel p-5 rounded-2xl relative animate-fade-in bg-slate-50/50 border border-slate-200';
+    
+    // Generate Dynamic Options
+    const typeOptions = licenseTypes.map(t => 
+        `<option value="${t.name}" ${data.type === t.name ? 'selected' : ''}>${t.name}</option>`
+    ).join('');
+
     div.innerHTML = `
         ${data.software ? '' : '<button type="button" class="remove-row absolute -top-2 -right-2 w-7 h-7 bg-rose-500 rounded-full text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"><i class="ph-bold ph-x"></i></button>'}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -262,10 +421,7 @@ function createRow(data = {}) {
             <div>
                 <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Tipe</label>
                 <select class="field-type w-full glass-input rounded-xl p-3 text-sm text-slate-700 cursor-pointer font-medium">
-                    <option ${data.type==='Perpetual'?'selected':''}>Perpetual</option>
-                    <option ${data.type==='Subscription'?'selected':''}>Subscription</option>
-                    <option ${data.type==='Trial'?'selected':''}>Trial</option>
-                    <option ${data.type==='Lifetime'?'selected':''}>Lifetime</option>
+                    ${typeOptions}
                 </select>
             </div>
             <div>
@@ -360,12 +516,26 @@ document.getElementById('license-form').addEventListener('submit', async (e) => 
 
 // --- DELETION ---
 let deleteCallback = null;
-function confirmDelete(id) {
+function confirmDelete(id, context = 'license') {
+    const confirmBtn = document.getElementById('confirm-delete-button');
+    const msg = document.getElementById('delete-confirm-message');
+    
+    if (context === 'type') {
+        msg.innerText = 'Menghapus Tipe Lisensi tidak akan menghapus lisensi yang sudah ada, tetapi mungkin mempengaruhi tampilan.';
+    } else {
+        msg.innerText = 'Item yang dihapus tidak dapat dikembalikan lagi. Anda yakin?';
+    }
+
     showModal('delete-confirm-modal');
     deleteCallback = async () => {
         try {
-            await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses', id));
-            showToast('Dihapus', 'Item telah dihapus permanen');
+            if (context === 'license') {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'licenses', id));
+                showToast('Dihapus', 'Lisensi telah dihapus');
+            } else if (context === 'type') {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'custom_types', id));
+                showToast('Dihapus', 'Tipe Lisensi telah dihapus');
+            }
             hideAllModals();
         } catch (e) { showToast('Error', e.message, true); }
     };
